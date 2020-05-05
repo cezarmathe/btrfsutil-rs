@@ -1,0 +1,47 @@
+[package]
+name = "btrfsutil"
+version = "0.1.0"
+authors = ["cezarmathe <me@cezarmathe.com>"]
+description = "Safe wrappers for libbtrfsutil."
+readme = "README.md"
+repository = "https://github.com/cezarmathe/btrfsutil-rs"
+documentation = "https://docs.rs/btrfsutil/"
+license = "MIT"
+edition = "2018"
+build = "build.rs"
+links = "btrfsutil"
+
+
+[package.metadata.docs.rs]
+rustc-args = ["--cfg",  "docs_rs"]
+rustdoc-args = ["--cfg", "docs_rs"]
+
+
+[lib]
+name = "btrfsutil"
+path = "src/lib.rs"
+
+
+[build-dependencies]
+bindgen = "0.53"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.5"
+
+
+[dependencies]
+bitflags = "1.2"
+chrono = "0.4.11"
+thiserror = "1.0"
+uuid = "0.8.1"
+
+
+[features]
+default = []
+
+# Enable glue errors. Theoretically, glue errors should not exist, but this feature can give you
+# extra reliability. If not enabled, glue errors will make the library panic.
+enable-glue-errors = []
+
+
+[[example]]
+name = "subvolume_iterator_info"
