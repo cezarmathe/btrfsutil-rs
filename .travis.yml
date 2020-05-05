@@ -16,5 +16,4 @@ before_install:
 script:
   - cargo fmt -- --check
   - cargo clippy -- -D warnings
-  - RUSTFLAGS="--cfg travis_ci" cargo build -v
-  - RUSTFLAGS="--cfg travis_ci" cargo build -v --examples
+  - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
