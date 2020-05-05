@@ -10,13 +10,11 @@ jobs:
 cache: cargo
 
 before_install:
-  - sudo apt-get update
-  - sudo apt-get -y install btrfs-progs
   - rustup component add rustfmt
   - rustup component add clippy
 
 script:
   - cargo fmt -- --check
-  - cargo clippy --release -- -D warnings
-  - cargo build -v --release
-  - cargo build -v --release --examples
+  - cargo clippy -- -D warnings
+  - RUSTFLAGS="--cfg travis_ci" cargo build -v
+  - RUSTFLAGS="--cfg travis_ci" cargo build -v --examples

@@ -52,7 +52,7 @@ fn build() {
 }
 
 fn main() {
-    if cfg!(not(docs_rs)) {
+    if cfg!(not(docs_rs)) && cfg!(not(travis_ci)) {
         println!("cargo:rustc-link-lib=btrfsutil");
     }
     build();
