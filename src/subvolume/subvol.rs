@@ -1,14 +1,13 @@
 use crate::bindings;
 use crate::common;
-use crate::error::GlueError;
-use crate::error::LibError;
-use crate::error::LibErrorCode;
+use crate::error::*;
 use crate::qgroup::QgroupInherit;
 use crate::subvolume::SubvolumeInfo;
 use crate::subvolume::SubvolumeIterator;
 use crate::Result;
 
 use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::ffi::CString;
 use std::path::PathBuf;
 
@@ -247,8 +246,9 @@ impl Subvolume {
     }
 }
 
-impl Into<Result<SubvolumeIterator>> for Subvolume {
-    fn into(self) -> Result<SubvolumeIterator> {
+impl TryInto<SubvolumeIterator> for Subvolume {
+    type Error = BtrfsUtilError;
+    fn try_into(self) -> Result<SubvolumeIterator> {
         SubvolumeIterator::create(self, None)
     }
 }
