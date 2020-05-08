@@ -5,14 +5,12 @@
 [![docs](https://docs.rs/btrfsutil/badge.svg)](https://docs.rs/btrfsutil)
 [![libbtrfsutil version](https://img.shields.io/badge/libbtrfsutil-1.2.0-7979F1)](https://github.com/kdave/btrfs-progs/blob/471b4cf7e3a46222531a895f90228ea164b1b857/libbtrfsutil/btrfsutil.h#L28-L30)
 
-Safe wrappers for [libbtrfsutil](https://github.com/kdave/btrfs-progs/tree/master/libbtrfsutil).
+Safe wrappers for [libbtrfsutil](https://github.com/kdave/btrfs-progs/tree/master/libbtrfsutil),
+using [btrfsutil-sys](https://github.com/cezarmathe/btrfsutil-sys).
 
 ## Building
 
-This library links to `libbtrfsutil`, a shared library provided by installing [btrfs-progs](https://github.com/kdave/btrfs-progs) on most Linux systems.
-
-- Arch Linux: `# pacman -S btrfs-progs`
-- Ubuntu: `# apt install btrfs-progs`
+Please refer to the building instructions provided by [btrfsutil-sys](https://github.com/cezarmathe/btrfsutil-sys#building).
 
 ## Usage
 
