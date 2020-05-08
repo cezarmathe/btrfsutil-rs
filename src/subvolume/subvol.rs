@@ -1,4 +1,3 @@
-use crate::bindings;
 use crate::common;
 use crate::error::*;
 use crate::qgroup::QgroupInherit;
@@ -11,33 +10,33 @@ use std::convert::TryInto;
 use std::ffi::CString;
 use std::path::PathBuf;
 
-use bindings::btrfs_util_create_snapshot;
-use bindings::btrfs_util_create_subvolume;
-use bindings::btrfs_util_delete_subvolume;
-use bindings::btrfs_util_deleted_subvolumes;
-use bindings::btrfs_util_get_default_subvolume;
-use bindings::btrfs_util_get_subvolume_read_only;
-use bindings::btrfs_util_is_subvolume;
-use bindings::btrfs_util_qgroup_inherit;
-use bindings::btrfs_util_set_default_subvolume;
-use bindings::btrfs_util_set_subvolume_read_only;
-use bindings::btrfs_util_subvolume_id;
-use bindings::btrfs_util_subvolume_path;
+use btrfsutil_sys::btrfs_util_create_snapshot;
+use btrfsutil_sys::btrfs_util_create_subvolume;
+use btrfsutil_sys::btrfs_util_delete_subvolume;
+use btrfsutil_sys::btrfs_util_deleted_subvolumes;
+use btrfsutil_sys::btrfs_util_get_default_subvolume;
+use btrfsutil_sys::btrfs_util_get_subvolume_read_only;
+use btrfsutil_sys::btrfs_util_is_subvolume;
+use btrfsutil_sys::btrfs_util_qgroup_inherit;
+use btrfsutil_sys::btrfs_util_set_default_subvolume;
+use btrfsutil_sys::btrfs_util_set_subvolume_read_only;
+use btrfsutil_sys::btrfs_util_subvolume_id;
+use btrfsutil_sys::btrfs_util_subvolume_path;
 
 bitflags! {
     /// Subvolume delete flags.
     pub struct DeleteFlags: i32 {
         /// Recursive.
-        const RECURSIVE = bindings::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
+        const RECURSIVE = btrfsutil_sys::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
     }
 }
 bitflags! {
     /// Subvolume snapshot flags.
     pub struct SnapshotFlags: i32 {
         /// Read-only.
-        const READ_ONLY	= bindings::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
+        const READ_ONLY	= btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
         /// Recursive.
-        const RECURSIVE = bindings::BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE as i32;
+        const RECURSIVE = btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE as i32;
     }
 }
 

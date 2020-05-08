@@ -1,4 +1,3 @@
-use crate::bindings;
 use crate::common;
 use crate::error::GlueError;
 use crate::error::LibError;
@@ -10,7 +9,7 @@ use crate::Result;
 use std::convert::Into;
 use std::convert::TryFrom;
 
-use bindings::btrfs_util_subvolume_info;
+use btrfsutil_sys::btrfs_util_subvolume_info;
 
 use chrono::NaiveDateTime;
 use chrono::Timelike;
@@ -18,7 +17,7 @@ use uuid::Uuid;
 
 /// Information about a Btrfs subvolume.
 ///
-/// Analogous to [btrfs_util_subvolume_info](../bindings/struct.btrfs_util_subvolume_info.html).
+/// Analogous to [btrfs_util_subvolume_info](../btrfsutil_sys/struct.btrfs_util_subvolume_info.html).
 #[derive(Clone, Debug)]
 pub struct SubvolumeInfo {
     /// ID of this subvolume, unique across the filesystem.
@@ -89,21 +88,21 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
                 otransid: 0,
                 stransid: 0,
                 rtransid: 0,
-                ctime: bindings::timespec {
-                    tv_nsec: 0 as bindings::__time_t,
-                    tv_sec: 0 as bindings::__syscall_slong_t,
+                ctime: btrfsutil_sys::timespec {
+                    tv_nsec: 0 as btrfsutil_sys::__time_t,
+                    tv_sec: 0 as btrfsutil_sys::__syscall_slong_t,
                 },
-                otime: bindings::timespec {
-                    tv_nsec: 0 as bindings::__time_t,
-                    tv_sec: 0 as bindings::__syscall_slong_t,
+                otime: btrfsutil_sys::timespec {
+                    tv_nsec: 0 as btrfsutil_sys::__time_t,
+                    tv_sec: 0 as btrfsutil_sys::__syscall_slong_t,
                 },
-                stime: bindings::timespec {
-                    tv_nsec: 0 as bindings::__time_t,
-                    tv_sec: 0 as bindings::__syscall_slong_t,
+                stime: btrfsutil_sys::timespec {
+                    tv_nsec: 0 as btrfsutil_sys::__time_t,
+                    tv_sec: 0 as btrfsutil_sys::__syscall_slong_t,
                 },
-                rtime: bindings::timespec {
-                    tv_nsec: 0 as bindings::__time_t,
-                    tv_sec: 0 as bindings::__syscall_slong_t,
+                rtime: btrfsutil_sys::timespec {
+                    tv_nsec: 0 as btrfsutil_sys::__time_t,
+                    tv_sec: 0 as btrfsutil_sys::__syscall_slong_t,
                 },
             }));
 

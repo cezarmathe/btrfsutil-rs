@@ -1,4 +1,3 @@
-use crate::bindings;
 use crate::common;
 use crate::error::GlueError;
 use crate::error::LibError;
@@ -8,16 +7,16 @@ use crate::Result;
 
 use std::convert::TryFrom;
 
-use bindings::btrfs_util_create_subvolume_iterator;
-use bindings::btrfs_util_destroy_subvolume_iterator;
-use bindings::btrfs_util_subvolume_iterator;
-use bindings::btrfs_util_subvolume_iterator_next;
+use btrfsutil_sys::btrfs_util_create_subvolume_iterator;
+use btrfsutil_sys::btrfs_util_destroy_subvolume_iterator;
+use btrfsutil_sys::btrfs_util_subvolume_iterator;
+use btrfsutil_sys::btrfs_util_subvolume_iterator_next;
 
 bitflags! {
     /// Subvolume iterator options
     pub struct SubvolumeIteratorFlags: i32 {
         /// Post order
-        const POST_ORDER = bindings::BTRFS_UTIL_SUBVOLUME_ITERATOR_POST_ORDER as i32;
+        const POST_ORDER = btrfsutil_sys::BTRFS_UTIL_SUBVOLUME_ITERATOR_POST_ORDER as i32;
     }
 }
 
@@ -34,7 +33,7 @@ impl RawIterator {
         });
 
         glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
-        glue_error!(id < bindings::BTRFS_FS_TREE_OBJECTID, GlueError::BadId(id));
+        glue_error!(id < btrfsutil_sys::BTRFS_FS_TREE_OBJECTID, GlueError::BadId(id));
 
         Ok(Subvolume::new(id))
     }

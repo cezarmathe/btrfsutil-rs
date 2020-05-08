@@ -50,20 +50,6 @@
 
 #![deny(missing_docs)]
 
-pub mod bindings {
-    //! Raw bindings to [libbtrfsutil](https://github.com/kdave/btrfs-progs/tree/master/libbtrfsutil).
-
-    #![allow(missing_docs)]
-    #![allow(non_upper_case_globals)]
-    #![allow(non_camel_case_types)]
-    #![allow(non_snake_case)]
-
-    include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
-    /// Id of the root subvolume in a Btrfs filesystem.
-    pub const BTRFS_FS_TREE_OBJECTID: u64 = 5;
-}
-
 #[macro_use]
 extern crate bitflags;
 

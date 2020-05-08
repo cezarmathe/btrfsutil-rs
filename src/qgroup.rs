@@ -1,22 +1,21 @@
 //! Btrfs quota groups
 
-use crate::bindings;
 use crate::error::*;
 use crate::Result;
 
 use std::convert::TryFrom;
 
-use bindings::btrfs_util_create_qgroup_inherit;
-use bindings::btrfs_util_destroy_qgroup_inherit;
-use bindings::btrfs_util_qgroup_inherit;
-use bindings::btrfs_util_qgroup_inherit_add_group;
-use bindings::btrfs_util_qgroup_inherit_get_groups;
+use btrfsutil_sys::btrfs_util_create_qgroup_inherit;
+use btrfsutil_sys::btrfs_util_destroy_qgroup_inherit;
+use btrfsutil_sys::btrfs_util_qgroup_inherit;
+use btrfsutil_sys::btrfs_util_qgroup_inherit_add_group;
+use btrfsutil_sys::btrfs_util_qgroup_inherit_get_groups;
 
 /// Qgroup inheritance specifier.
 ///
 /// Wrapper around [btrfs_util_qgroup_inherit].
 ///
-/// [btrfs_util_qgroup_inherit]: ../bindings/struct.btrfs_util_qgroup_inherit.html
+/// [btrfs_util_qgroup_inherit]: ../btrfsutil_sys/struct.btrfs_util_qgroup_inherit.html
 #[derive(Clone, Debug)]
 pub struct QgroupInherit(*mut btrfs_util_qgroup_inherit);
 
