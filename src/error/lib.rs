@@ -40,7 +40,8 @@ pub enum LibError {
     NotSubvolume = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_NOT_SUBVOLUME as isize,
     /// Subvolume not found
     #[error("Subvolume not found")]
-    SubvolumeNotFound = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOLUME_NOT_FOUND as isize,
+    SubvolumeNotFound =
+        btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOLUME_NOT_FOUND as isize,
     /// Could not open
     #[error("Could not open")]
     OpenFailed = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_OPEN_FAILED as isize,
@@ -72,13 +73,15 @@ pub enum LibError {
         btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOL_SETFLAGS_FAILED as isize,
     /// Could not create subvolume
     #[error("Could not create subvolume")]
-    SubvolCreateFailed = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOL_CREATE_FAILED as isize,
+    SubvolCreateFailed =
+        btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOL_CREATE_FAILED as isize,
     /// Could not create snapshot
     #[error("Could not create snapshot")]
     SnapCreateFailed = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SNAP_CREATE_FAILED as isize,
     /// Could not destroy subvolume/snapshot
     #[error("Could not destroy subvolume/snapshot")]
-    SnapDestroyFailed = btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SNAP_DESTROY_FAILED as isize,
+    SnapDestroyFailed =
+        btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SNAP_DESTROY_FAILED as isize,
     /// Could not set default subvolume
     #[error("Could not set default subvolume")]
     DefaultSubvolFailed =
@@ -153,16 +156,30 @@ impl TryFrom<LibErrorCode> for LibError {
                 Ok(LibError::InvalidArgument)
             }
             btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_NOT_BTRFS => Ok(LibError::NotBtrfs),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_NOT_SUBVOLUME => Ok(LibError::NotSubvolume),
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_NOT_SUBVOLUME => {
+                Ok(LibError::NotSubvolume)
+            }
             btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SUBVOLUME_NOT_FOUND => {
                 Ok(LibError::SubvolumeNotFound)
             }
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_OPEN_FAILED => Ok(LibError::OpenFailed),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_RMDIR_FAILED => Ok(LibError::RmdirFailed),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_UNLINK_FAILED => Ok(LibError::UnlinkFailed),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_STAT_FAILED => Ok(LibError::StatFailed),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_STATFS_FAILED => Ok(LibError::StatfsFailed),
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SEARCH_FAILED => Ok(LibError::SearchFailed),
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_OPEN_FAILED => {
+                Ok(LibError::OpenFailed)
+            }
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_RMDIR_FAILED => {
+                Ok(LibError::RmdirFailed)
+            }
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_UNLINK_FAILED => {
+                Ok(LibError::UnlinkFailed)
+            }
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_STAT_FAILED => {
+                Ok(LibError::StatFailed)
+            }
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_STATFS_FAILED => {
+                Ok(LibError::StatfsFailed)
+            }
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SEARCH_FAILED => {
+                Ok(LibError::SearchFailed)
+            }
             btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_INO_LOOKUP_FAILED => {
                 Ok(LibError::InoLookupFailed)
             }
@@ -184,7 +201,9 @@ impl TryFrom<LibErrorCode> for LibError {
             btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_DEFAULT_SUBVOL_FAILED => {
                 Ok(LibError::DefaultSubvolFailed)
             }
-            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SYNC_FAILED => Ok(LibError::SyncFailed),
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_SYNC_FAILED => {
+                Ok(LibError::SyncFailed)
+            }
             btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_START_SYNC_FAILED => {
                 Ok(LibError::StartSyncFailed)
             }

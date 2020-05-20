@@ -33,7 +33,10 @@ impl RawIterator {
         });
 
         glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
-        glue_error!(id < btrfsutil_sys::BTRFS_FS_TREE_OBJECTID, GlueError::BadId(id));
+        glue_error!(
+            id < btrfsutil_sys::BTRFS_FS_TREE_OBJECTID,
+            GlueError::BadId(id)
+        );
 
         Ok(Subvolume::new(id))
     }
