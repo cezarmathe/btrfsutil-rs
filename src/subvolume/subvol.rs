@@ -161,6 +161,10 @@ impl Subvolume {
         Ok(())
     }
 
+    #[cfg(any(
+        feature = "subvol-path-no-confirm",
+        feature = "subvol-path-try-confirm"
+    ))]
     /// Get the subvolume for a certain path.
     pub fn get<T: Into<PathBuf>>(path: T) -> Result<Self> {
         let path_cstr = common::into_path_to_cstr(path)?;
@@ -170,7 +174,36 @@ impl Subvolume {
             errcode = btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut subvol_id);
         });
 
-        Ok(Self(subvol_id))
+        let subvolume = Self{
+            id: subvol_id,
+            path: SubvolumePath::NotConfirmed(path.into()),
+        };
+        if cfg!(feature = "subvol-path-try-confirm") {
+            let _ = subvolume.try_confirm_path();
+        }
+
+        Ok(subvolume)
+    }
+
+    #[cfg(any(feature = "subvol-path-relaxed", feature = "subvol-path-strict"))]
+    /// Get the subvolume for a certain path.
+    pub fn get<T: Into<PathBuf>>(path: T) -> Result<Self> {
+        let path_cstr = common::into_path_to_cstr(path)?;
+        let subvol_id: u64 = 0;
+
+        unsafe_wrapper!(errcode, {
+            errcode = btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut subvol_id);
+        });
+
+        let subvolume = Self{
+            id: subvol_id,
+            path: path.into(),
+        };
+        if cfg!(feature = "subvol-path-strict") {
+            subvolume.try_confirm_path()?;
+        }
+
+        Ok(subvolume)
     }
 
     /// Check if a path is a Btrfs subvolume.
