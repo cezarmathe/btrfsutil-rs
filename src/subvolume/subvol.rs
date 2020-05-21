@@ -3,6 +3,7 @@ use crate::error::*;
 use crate::qgroup::QgroupInherit;
 use crate::subvolume::SubvolumeInfo;
 use crate::subvolume::SubvolumeIterator;
+use crate::subvolume::SubvolumePath;
 use crate::Result;
 
 use std::convert::TryFrom;
@@ -42,9 +43,12 @@ bitflags! {
 
 /// A Btrfs subvolume.
 ///
-/// Internally, this contains just the id of the subvolume.
+/// This struct contains the id of this subvolume and a path to it.
 #[derive(Clone, Debug)]
-pub struct Subvolume(u64);
+pub struct Subvolume {
+    id: u64,
+    path: SubvolumePath,
+}
 
 impl Subvolume {
     /// Create a new subvolume.
@@ -231,7 +235,7 @@ impl Subvolume {
 
     /// Get the id of this subvolume.
     pub fn id(&self) -> u64 {
-        self.0
+        self.id
     }
 
     /// Create a new Subvolume from an id.
