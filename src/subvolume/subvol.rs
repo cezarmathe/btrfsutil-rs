@@ -160,15 +160,12 @@ impl Subvolume {
     /// Get the subvolume for a certain path.
     pub fn get<T: Into<PathBuf>>(path: T) -> Result<Self> {
         let path_cstr = common::into_path_to_cstr(path)?;
-        let id: *mut u64 = &mut 0;
+        let subvol_id: u64 = 0;
 
         unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_subvolume_id(path_cstr.as_ptr(), id);
+            errcode = btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut subvol_id);
         });
 
-        glue_error!(id.is_null(), GlueError::NullPointerReceived);
-
-        let subvol_id: u64 = unsafe { *id };
         Ok(Self(subvol_id))
     }
 
