@@ -189,8 +189,15 @@ impl Subvolume {
         SubvolumeInfo::try_from(self)
     }
 
-    /// Get the path of this subvolume relative to the filesystem root.
-    pub fn path(&self) -> Result<PathBuf> {
+    #[cfg(any(
+        feature = "subvol-path-no-confirm",
+        feature = "subvol-path-try-confirm"
+    ))]
+    /// Try to confirm the path to this Subvolume
+    pub fn try_confirm_path(&self) -> Result<()> {
+        if let SubvolumePath::Confirmed(_) = self.path {
+            return Ok(());
+        }
         let path_cstr = common::into_path_to_cstr("/")?;
         let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
 
@@ -202,7 +209,32 @@ impl Subvolume {
 
         let cstr: CString = unsafe { CString::from_raw(str_ptr) };
         match cstr.to_str() {
-            Ok(val) => Ok(PathBuf::from(format!("/{}", val))),
+            Ok(val) => {
+                self.path = SubvolumePath::Confirmed(PathBuf::from(format!("/{}", val)));
+                Ok(())
+            }
+            Err(e) => glue_error!(GlueError::Utf8Error(e)),
+        }
+    }
+
+    #[cfg(any(feature = "subvol-path-relaxed", feature = "subvol-path-strict"))]
+    /// Try to confirm the path to this Subvolume
+    pub fn try_confirm_path(&self) -> Result<()> {
+        let path_cstr = common::into_path_to_cstr("/")?;
+        let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        unsafe_wrapper!(errcode, {
+            errcode = btrfs_util_subvolume_path(path_cstr.as_ptr(), self.0, &mut str_ptr);
+        });
+
+        glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
+
+        let cstr: CString = unsafe { CString::from_raw(str_ptr) };
+        match cstr.to_str() {
+            Ok(val) => {
+                self.path = PathBuf::from(format!("/{}", val));
+                Ok(())
+            }
             Err(e) => glue_error!(GlueError::Utf8Error(e)),
         }
     }
