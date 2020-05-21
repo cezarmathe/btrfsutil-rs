@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 #[cfg(any(feature = "subvol-path-relaxed", feature = "subvol-path-strict"))]
-type SubvolumePath = PathBuf;
+pub(crate) type SubvolumePath = PathBuf;
 
 #[cfg(any(
     feature = "subvol-path-no-confirm",
