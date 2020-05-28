@@ -25,4 +25,4 @@ script:
   - cargo fmt -- --check
   - cargo clippy -- -D warnings
   - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
-  - sudo make
+  - sudo make PROVIDER=libvirt
