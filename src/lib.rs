@@ -48,19 +48,24 @@
 //! }
 //! ```
 
-#![deny(missing_docs)]
+// #![cfg(unix)]
+// #![deny(missing_docs)]
 
-#[macro_use]
-extern crate bitflags;
+// #[macro_use]
+// extern crate bitflags;
 
-#[macro_use]
-pub mod error;
-#[macro_use]
-mod common;
-pub mod qgroup;
-pub mod subvolume;
+// #[macro_use]
+// pub mod error;
+// #[macro_use]
+// mod common;
+// pub mod qgroup;
+// pub mod subvolume;
 
-pub use error::BtrfsUtilError;
+// pub use error::BtrfsUtilError;
 
-/// Result type used by this library.
-pub type Result<T> = std::result::Result<T, BtrfsUtilError>;
+// /// Result type used by this library.
+// pub type Result<T> = std::result::Result<T, BtrfsUtilError>;
+
+pub fn lol() -> u64 {
+    0
+}

@@ -7,13 +7,22 @@ jobs:
   allow_failures:
     - rust: nightly
   fast_finish: true
-cache: cargo
+cache:
+  cargo: true
+  directories:
+    - /home/travis/.vagrant.d/boxes
 
-before_install:
+install:
   - rustup component add rustfmt
   - rustup component add clippy
+  - sudo apt-get update && sudo apt-get install -y bridge-utils dnsmasq-base ebtables libvirt-bin libvirt-dev qemu-kvm qemu-utils ruby-dev
+  - sudo wget -nv https://releases.hashicorp.com/vagrant/2.2.9/vagrant_2.2.9_x86_64.deb
+  - sudo dpkg -i vagrant_2.2.7_x86_64.deb
+  - vagrant --version
+  - sudo vagrant plugin install vagrant-libvirt
 
 script:
   - cargo fmt -- --check
   - cargo clippy -- -D warnings
   - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
+  - sudo make

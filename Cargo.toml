@@ -30,22 +30,7 @@ uuid = "0.8.1"
 
 
 [features]
-default = ["subvol-path-try-confirm"]
-
-# Subvolume path features
-# These features dictate how the path in the Subvolume struct are handled by Subvolume functions
-# - subvol-path-relaxed makes no effort in confirming the path acquired by the Subvolume struct
-subvol-path-relaxed = []
-# - subvol-path-no-confirm will show the user of this library whether the path in the Subvolume
-#   struct is confirmed or not, but will not attempt to confirm it automatically
-subvol-path-no-confirm = []
-# - subvol-path-no-upgrade will show the user of this library whether the path in the Subvolume
-#   struct is confirmed or not and will attempt to confirm it automatically, but will not report
-#   any error if the confirmation fails
-subvol-path-try-confirm = []
-# - subvol-path-strict will try to confirm the path in the Subvolume struct and it will return an
-#   error if it fails
-subvol-path-strict = []
+default = []
 
 # Enable glue errors. Theoretically, glue errors should not exist, but this feature can give you
 # extra reliability. If not enabled, glue errors will make the library panic.
