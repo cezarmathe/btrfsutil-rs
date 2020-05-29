@@ -7,7 +7,10 @@ pub fn check_env() {
     };
     if std::env::var("BTRFSUTIL_TESTENV").is_err() {
         err_msg();
-    } else if std::env::var("BTRFSUTIL_TESTENV").unwrap_or_default().is_empty() {
+    } else if std::env::var("BTRFSUTIL_TESTENV")
+        .unwrap_or_default()
+        .is_empty()
+    {
         err_msg();
     }
 }
