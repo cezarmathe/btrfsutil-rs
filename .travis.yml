@@ -12,6 +12,7 @@ install:
   - sudo vagrant plugin install vagrant-libvirt
 
 script:
+  - mkdir target
   - sudo make provision PROVIDER=libvirt
   - sudo make wrapper WRAPPER_CMD="make check_fmt"
   - sudo make wrapper WRAPPER_CMD="make check_clippy"
