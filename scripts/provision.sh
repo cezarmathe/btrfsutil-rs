@@ -12,8 +12,8 @@ apt-get install --yes \
     gcc \
     clang
 
-# printf "%s" "Installing Rust"
-# su - vagrant -c bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+printf "%s" "Installing Rust"
+su - vagrant -c bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
 
 # printf "%s" "Setting up the test environment"
 # if [[ ! -f "/home/vagrant/${BTRFSUTIL_TESTENV}.img" ]]; then
