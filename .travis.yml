@@ -1,15 +1,6 @@
 dist: bionic
-language: rust
-rust:
-  - stable
-  - beta
-  - nightly
-jobs:
-  allow_failures:
-    - rust: nightly
-  fast_finish: true
+language: minimal
 cache:
-  cargo: true
   directories:
     - /home/travis/.vagrant.d/boxes
 
@@ -23,9 +14,11 @@ install:
   - sudo vagrant plugin install vagrant-libvirt
 
 script:
-  - cargo fmt -- --check
-  - cargo clippy -- -D warnings
-  # - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
   - sudo make provision PROVIDER=libvirt
-  - sudo make build
-  - sudo make test
+  - sudo make wrapper WRAPPER_CMD="make check_fmt"
+  - sudo make wrapper WRAPPER_CMD="make check_clippy"
+  - sudo make wrapper WRAPPER_CMD="make docs"
+  - sudo make wrapper WRAPPER_CMD="cargo build -v"
+  - sudo make wrapper WRAPPER_CMD="./scripts/btrfsutil_testenv_bootstrap.sh"
+  - sudo make wrapper WRAPPER_CMD="cargo test -v"
+  - sudo make wrapper WRAPPER_CMD="./scripts/btrfsutil_testenv_teardown.sh"
