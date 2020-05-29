@@ -16,7 +16,7 @@ if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 sudo rm -r "/mnt/${BTRFSUTIL_TESTENV}"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 
-rm "/home/vagrant/${BTRFSUTIL_TESTENV}.img"
+rm "${HOME}/${BTRFSUTIL_TESTENV}.img"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 
 exit ${EXIT_CODE}

@@ -11,15 +11,15 @@ if [[ -z "${BTRFSUTIL_TESTENV}" ]]; then
 fi
 
 BTRFSUTIL_TESTENV_EXIT_CODE=0
-fallocate -l 1G "/home/vagrant/${BTRFSUTIL_TESTENV}.img"
+fallocate -l 1G "${HOME}/${BTRFSUTIL_TESTENV}.img"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
-mkfs -t btrfs -q "/home/vagrant/${BTRFSUTIL_TESTENV}.img"
+mkfs -t btrfs -q "${HOME}/${BTRFSUTIL_TESTENV}.img"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 
 sudo mkdir "/mnt/${BTRFSUTIL_TESTENV}"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 sudo mount -t btrfs -o loop \
-    "/home/vagrant/${BTRFSUTIL_TESTENV}.img" \
+    "${HOME}/${BTRFSUTIL_TESTENV}.img" \
     "/mnt/${BTRFSUTIL_TESTENV}"
 if [[ "$?" != "0" ]]; then BTRFSUTIL_TESTENV_EXIT_CODE=1; fi
 

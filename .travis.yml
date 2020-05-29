@@ -25,5 +25,8 @@ install:
 script:
   - cargo fmt -- --check
   - cargo clippy -- -D warnings
-  - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
-  - sudo make PROVIDER=libvirt
+  # - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
+  - sudo make up PROVIDER=libvirt
+  - sudo make provision
+  - sudo make build
+  - sudo make test

@@ -1,28 +1,31 @@
 PROVIDER=virtualbox
-TARGET=debug
 
 default: test
 
+build:
+	vagrant ssh -- /home/vagrant/btrfsutil_build.sh
+.PHONY: build
+
+test:
+	vagrant ssh -- /home/vagrant/btrfsutil_test.sh
+.PHONY: test
+
 up:
-	cd vagrant; vagrant up --provider $(PROVIDER)
+	vagrant up --provider $(PROVIDER)
 .PHONY: up
 
-provision:
-	cd vagrant; vagrant provision
+provision: up
+	vagrant provision
 .PHONY: provision
 
 ssh:
-	cd vagrant; vagrant ssh
+	vagrant ssh
 .PHONY: ssh
 
 reload:
-	cd vagrant; vagrant reload
+	vagrant reload
 .PHONY: reload
 
 halt:
-	cd vagrant; vagrant halt
+	vagrant halt
 .PHONY: halt
-
-test: up provision
-	cargo build --tests
-	cd vagrant; vagrant ssh -- /home/vagrant/btrfsutil_test.sh "$(TARGET)"
