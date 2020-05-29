@@ -5,8 +5,6 @@ cache:
     - /home/travis/.vagrant.d/boxes
 
 install:
-  - rustup component add rustfmt
-  - rustup component add clippy
   - sudo apt-get update && sudo apt-get install -y bridge-utils dnsmasq-base ebtables libvirt-bin libvirt-dev qemu-kvm qemu-utils ruby-dev
   - sudo wget -nv https://releases.hashicorp.com/vagrant/2.2.9/vagrant_2.2.9_x86_64.deb
   - sudo dpkg -i vagrant_2.2.9_x86_64.deb
