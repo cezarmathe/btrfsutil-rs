@@ -11,7 +11,8 @@ struct BindgenWhitelist {
 }
 
 fn build() {
-    println!("cargo:rerun-if-changed=libbtrfsutil/btrfsutil.h");
+    let wrapper_file = "btrfsutil_wrapper.h";
+    println!("cargo:rerun-if-changed={}", wrapper_file);
     println!("cargo:rerun-if-changed=bindgen_whitelist.toml");
 
     let bindgen_whitelist_string: String = String::from_utf8(
@@ -21,8 +22,7 @@ fn build() {
     let bindgen_whitelist: BindgenWhitelist = toml::from_str(bindgen_whitelist_string.as_str())
         .expect("Failed to deserialize bindgen whitelist");
 
-    let mut bindings_builder: bindgen::Builder =
-        bindgen::Builder::default().header("libbtrfsutil/btrfsutil.h");
+    let mut bindings_builder: bindgen::Builder = bindgen::Builder::default().header(wrapper_file);
 
     if let Some(val) = bindgen_whitelist.types {
         for type_name in val {
