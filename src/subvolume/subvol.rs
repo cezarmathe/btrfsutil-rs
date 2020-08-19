@@ -46,7 +46,9 @@ bitflags! {
 ///
 /// Internally, this contains just the id of the subvolume.
 #[derive(Clone, Debug)]
-pub struct Subvolume(u64);
+pub struct Subvolume {
+    id: u64,
+}
 
 impl Subvolume {
     /// Create a new subvolume.
@@ -104,8 +106,8 @@ impl Subvolume {
 
         let subvolumes: Vec<Subvolume> = {
             let mut subvolumes: Vec<Subvolume> = Vec::with_capacity(ids_count as usize);
-            for item in subvolume_ids {
-                subvolumes.push(Subvolume(item));
+            for id in subvolume_ids {
+                subvolumes.push(Subvolume::new(id));
             }
             subvolumes
         };
@@ -122,7 +124,7 @@ impl Subvolume {
             errcode = btrfs_util_get_default_subvolume(path_cstr.as_ptr(), &mut id);
         });
 
-        Ok(Subvolume(id))
+        Ok(Subvolume::new(id))
     }
 
     /// Set this subvolume as the default subvolume.
@@ -130,7 +132,7 @@ impl Subvolume {
         let path_cstr = common::into_path_to_cstr("/")?;
 
         unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.0);
+            errcode = btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.id());
         });
 
         Ok(())
@@ -171,7 +173,7 @@ impl Subvolume {
         glue_error!(id.is_null(), GlueError::NullPointerReceived);
 
         let subvol_id: u64 = unsafe { *id };
-        Ok(Self(subvol_id))
+        Ok(Subvolume::new(subvol_id))
     }
 
     /// Check if a path is a Btrfs subvolume.
@@ -196,7 +198,7 @@ impl Subvolume {
         let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
 
         unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_subvolume_path(path_cstr.as_ptr(), self.0, &mut str_ptr);
+            errcode = btrfs_util_subvolume_path(path_cstr.as_ptr(), self.id(), &mut str_ptr);
         });
 
         glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
@@ -236,14 +238,14 @@ impl Subvolume {
 
     /// Get the id of this subvolume.
     pub fn id(&self) -> u64 {
-        self.0
+        self.id
     }
 
     /// Create a new Subvolume from an id.
     ///
     /// Restricted to the crate.
     pub(crate) fn new(id: u64) -> Self {
-        Self(id)
+        Self { id }
     }
 }
 
