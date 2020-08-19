@@ -85,8 +85,8 @@ impl Subvolume {
     }
 
     /// Get a list of subvolumes which have been deleted but not yet cleaned up.
-    pub fn deleted<T: Into<PathBuf>>(path: Option<T>) -> Result<Vec<Subvolume>> {
-        let path_cstr = common::optional_into_path_to_cstr(path)?;
+    pub fn deleted<T: Into<PathBuf>>(path: T) -> Result<Vec<Subvolume>> {
+        let path_cstr = common::path_to_cstr(path.into())?;
         let mut ids_ptr: *mut u64 = std::ptr::null_mut();
         let mut ids_count: u64 = 0;
 
@@ -116,8 +116,8 @@ impl Subvolume {
     }
 
     /// Get the default subvolume
-    pub fn get_default<T: Into<PathBuf>>(path: Option<T>) -> Result<Self> {
-        let path_cstr = common::optional_into_path_to_cstr(path)?;
+    pub fn get_default<T: Into<PathBuf>>(path: T) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path.into())?;
         let mut id: u64 = 0;
 
         unsafe_wrapper!(errcode, {

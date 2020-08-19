@@ -24,17 +24,6 @@ pub(crate) fn path_to_cstr(path: PathBuf) -> Result<CString> {
     }
 }
 
-/// Convert an Option<Into<PathBuf>> to a CString.
-#[inline]
-pub(crate) fn optional_into_path_to_cstr<T: Into<PathBuf>>(path: Option<T>) -> Result<CString> {
-    let path: PathBuf = if let Some(val) = path {
-        val.into()
-    } else {
-        "/".into()
-    };
-    path_to_cstr(path)
-}
-
 /// Macro for simplifying an `if let Some(val) {} else {}` statement.
 macro_rules! if_let_some {
     ($option: ident, $val_name: ident, $some: expr, $none: expr) => {
