@@ -74,7 +74,7 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
     type Error = BtrfsUtilError;
 
     fn try_from(src: &Subvolume) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(src.path()?)?;
+        let path_cstr = common::path_to_cstr(src.fs_root())?;
         let btrfs_subvolume_info_ptr: *mut btrfs_util_subvolume_info =
             Box::into_raw(Box::from(btrfs_util_subvolume_info {
                 id: 0,
