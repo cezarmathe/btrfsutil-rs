@@ -25,9 +25,7 @@ impl QgroupInherit {
     pub fn create() -> Result<Self> {
         let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = std::ptr::null_mut();
 
-        unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_create_qgroup_inherit(0, &mut qgroup_ptr);
-        });
+        unsafe_wrapper!({ btrfs_util_create_qgroup_inherit(0, &mut qgroup_ptr) })?;
 
         glue_error!(qgroup_ptr.is_null(), GlueError::NullPointerReceived);
 
@@ -39,9 +37,7 @@ impl QgroupInherit {
         let qgroup_ptr_initial: *mut btrfs_util_qgroup_inherit = self.into();
         let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = self.into();
 
-        unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_qgroup_inherit_add_group(&mut qgroup_ptr, qgroup_id);
-        });
+        unsafe_wrapper!({ btrfs_util_qgroup_inherit_add_group(&mut qgroup_ptr, qgroup_id) })?;
 
         glue_error!(qgroup_ptr.is_null(), GlueError::NullPointerReceived);
 

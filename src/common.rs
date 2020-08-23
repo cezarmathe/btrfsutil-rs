@@ -18,14 +18,17 @@ pub(crate) fn path_to_cstr(path: &Path) -> Result<CString> {
     }
 }
 
-/// Macro for preparing for an unsafe function execution and reacting to it's error code
+/// Macro for preparing for an unsafe function execution and reacting to its
+/// error code
 macro_rules! unsafe_wrapper {
-    ($errcode: ident, $unsafe_block: block) => {
-        let $errcode: LibErrorCode;
-        unsafe { $unsafe_block }
-        if $errcode > 0 {
-            let err = LibError::try_from($errcode)?;
-            return Result::Err(err.into());
+    ($unsafe_block: block) => {{
+        let errcode: LibErrorCode = unsafe { $unsafe_block };
+        match errcode {
+            bindings::btrfs_util_error_BTRFS_UTIL_OK => Result::Ok(()),
+            err => {
+                let err = LibError::try_from(err).unwrap();
+                Result::Err(err.into())
+            }
         }
-    };
+    }};
 }

@@ -33,9 +33,9 @@ impl RawIterator {
         let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
         let mut id: u64 = 0;
 
-        unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_subvolume_iterator_next(self.raw_iter, &mut str_ptr, &mut id);
-        });
+        unsafe_wrapper!({
+            btrfs_util_subvolume_iterator_next(self.raw_iter, &mut str_ptr, &mut id)
+        })?;
 
         glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
         glue_error!(id < bindings::BTRFS_FS_TREE_OBJECTID, GlueError::BadId(id));
@@ -57,20 +57,19 @@ pub struct SubvolumeIterator(Vec<Subvolume>);
 
 impl SubvolumeIterator {
     /// Create a new subvolume iterator.
-    #[allow(clippy::identity_conversion)]
     pub fn create(subvolume: Subvolume, flags: Option<SubvolumeIteratorFlags>) -> Result<Self> {
         let path_cstr = common::path_to_cstr(subvolume.fs_root())?;
         let flags_val = if let Some(val) = flags { val.bits() } else { 0 };
         let mut iterator_ptr: *mut btrfs_util_subvolume_iterator = std::ptr::null_mut();
 
-        unsafe_wrapper!(errcode, {
-            errcode = btrfs_util_create_subvolume_iterator(
+        unsafe_wrapper!({
+            btrfs_util_create_subvolume_iterator(
                 path_cstr.as_ptr(),
                 subvolume.id(),
                 flags_val,
                 &mut iterator_ptr,
-            );
-        });
+            )
+        })?;
 
         glue_error!(iterator_ptr.is_null(), GlueError::NullPointerReceived);
 
@@ -84,7 +83,7 @@ impl SubvolumeIterator {
                 match raw_iterator.next() {
                     Ok(val) => items.push(val),
                     Err(e) => {
-                        if e == LibError::StopIteration.into() {
+                        if e == LibError::StopIteration {
                             break;
                         } else {
                             return Result::Err(e);

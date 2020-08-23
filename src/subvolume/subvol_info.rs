@@ -107,10 +107,9 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
                 },
             }));
 
-        unsafe_wrapper!(errcode, {
-            errcode =
-                btrfs_util_subvolume_info(path_cstr.as_ptr(), src.id(), btrfs_subvolume_info_ptr);
-        });
+        unsafe_wrapper!({
+            btrfs_util_subvolume_info(path_cstr.as_ptr(), src.id(), btrfs_subvolume_info_ptr)
+        })?;
 
         glue_error!(
             btrfs_subvolume_info_ptr.is_null(),
@@ -219,11 +218,5 @@ impl TryFrom<Box<btrfs_util_subvolume_info>> for SubvolumeInfo {
             stime,
             rtime,
         })
-    }
-}
-
-impl Into<Subvolume> for SubvolumeInfo {
-    fn into(self) -> Subvolume {
-        Subvolume::new(self.id)
     }
 }
