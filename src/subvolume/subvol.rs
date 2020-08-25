@@ -274,3 +274,127 @@ impl Into<Result<SubvolumeIterator>> for Subvolume {
         SubvolumeIterator::create(self, None)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::fs::{create_dir_all, OpenOptions};
+    use std::path::Path;
+
+    use nix::mount::{mount, MsFlags};
+
+    use crate::bindings::BTRFS_FS_TREE_OBJECTID;
+    use crate::testing::{btrfs_create_fs, test_with_spec};
+
+    fn test_btrfs_subvol(paths: &[&Path]) {
+        // Create btrfs filesystem on loopback device
+        btrfs_create_fs(paths[0]).unwrap();
+
+        // Create mount point and mount
+        let mount_pt = Path::new("/tmp/btrfsutil/mnt");
+        create_dir_all(mount_pt).unwrap();
+        mount(
+            Some(paths[0]),
+            mount_pt,
+            Some("btrfs"),
+            MsFlags::empty(),
+            None as Option<&str>,
+        )
+        .unwrap();
+
+        let root_subvol = Subvolume::from_path(mount_pt).unwrap();
+        assert_eq!(root_subvol.id(), BTRFS_FS_TREE_OBJECTID);
+
+        let mut new_sv_path = mount_pt.to_owned();
+        new_sv_path.push("subvol1");
+        let sv1 = Subvolume::create(&new_sv_path, None).unwrap();
+
+        // Test rel_path()
+        let sv1_rel_path = sv1.rel_path().unwrap();
+        assert_eq!(&sv1_rel_path, Path::new("subvol1"));
+
+        // Test abs_path()
+        let sv1_abs_path = sv1.abs_path().unwrap();
+        assert_eq!(&sv1_abs_path, &new_sv_path);
+
+        // Test get_default
+        let default_sv = Subvolume::get_default(mount_pt).unwrap();
+        assert_eq!(default_sv, root_subvol);
+
+        // Test set_default
+        sv1.set_default().unwrap();
+        let new_default_sv = Subvolume::get_default(mount_pt).unwrap();
+        assert_eq!(sv1, new_default_sv);
+        assert_eq!(new_default_sv.abs_path().unwrap(), new_sv_path);
+
+        // Restore root as default
+        root_subvol.set_default().unwrap();
+
+        let info = root_subvol.info().unwrap();
+        assert_eq!(info.id, BTRFS_FS_TREE_OBJECTID);
+        assert_eq!(info.parent_id, None);
+        assert_eq!(info.dir_id, None);
+        assert_eq!(info.parent_uuid, None);
+        assert_eq!(info.received_uuid, None);
+
+        // Test cannot write to readonly subvolume
+        assert_eq!(false, sv1.is_ro().unwrap());
+        sv1.set_ro(true).unwrap();
+        let mut file_path = sv1_abs_path.clone();
+        file_path.push("file.txt");
+        assert!(OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&file_path)
+            .is_err());
+
+        // Can now create a file
+        sv1.set_ro(false).unwrap();
+        assert!(OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&file_path)
+            .is_ok());
+
+        // Test is_subvolume
+        assert_eq!(true, Subvolume::is_subvolume(mount_pt).unwrap());
+        assert_eq!(true, Subvolume::is_subvolume(&new_sv_path).unwrap());
+        // Existing non-btrfs path
+        assert_eq!(false, Subvolume::is_subvolume(Path::new("/tmp")).unwrap());
+        // Nonexistent path
+        assert_eq!(
+            false,
+            Subvolume::is_subvolume(Path::new("/foobar")).unwrap()
+        );
+
+        let mut dir_path = sv1_abs_path.clone();
+        dir_path.push("dir1");
+        create_dir_all(&dir_path).unwrap();
+        // A directory within a subvolume is not a subvolume
+        assert_eq!(false, Subvolume::is_subvolume(&dir_path).unwrap());
+
+        // Test making a snapshot
+        let mut snap_path = mount_pt.to_owned();
+        snap_path.push("snap1");
+        let snap_sv1 = sv1.snapshot(&snap_path, None, None).unwrap();
+        let mut snap_file_path = snap_path;
+        snap_file_path.push("file.txt");
+
+        // File from orig also in snap
+        assert!(OpenOptions::new().read(true).open(&snap_file_path).is_ok());
+
+        // Test subvol deletion
+        let snap_id = snap_sv1.info().unwrap().id;
+        snap_sv1.delete(None).unwrap();
+
+        let deleted = Subvolume::deleted(mount_pt).unwrap();
+        assert_eq!(1, deleted.len());
+        assert_eq!(snap_id, deleted[0].id());
+    }
+
+    #[test]
+    fn loop_test_btrfs_subvol() {
+        test_with_spec(1, test_btrfs_subvol);
+    }
+}
