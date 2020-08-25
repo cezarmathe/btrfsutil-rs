@@ -74,7 +74,7 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
     type Error = BtrfsUtilError;
 
     fn try_from(src: &Subvolume) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(src.path()?)?;
+        let path_cstr = common::path_to_cstr(src.fs_root())?;
         let btrfs_subvolume_info_ptr: *mut btrfs_util_subvolume_info =
             Box::into_raw(Box::from(btrfs_util_subvolume_info {
                 id: 0,
@@ -107,10 +107,9 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
                 },
             }));
 
-        unsafe_wrapper!(errcode, {
-            errcode =
-                btrfs_util_subvolume_info(path_cstr.as_ptr(), src.id(), btrfs_subvolume_info_ptr);
-        });
+        unsafe_wrapper!({
+            btrfs_util_subvolume_info(path_cstr.as_ptr(), src.id(), btrfs_subvolume_info_ptr)
+        })?;
 
         glue_error!(
             btrfs_subvolume_info_ptr.is_null(),
@@ -219,11 +218,5 @@ impl TryFrom<Box<btrfs_util_subvolume_info>> for SubvolumeInfo {
             stime,
             rtime,
         })
-    }
-}
-
-impl Into<Subvolume> for SubvolumeInfo {
-    fn into(self) -> Subvolume {
-        Subvolume::new(self.id)
     }
 }

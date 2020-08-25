@@ -74,6 +74,9 @@ mod common;
 pub mod qgroup;
 pub mod subvolume;
 
+#[cfg(test)]
+mod testing;
+
 pub use error::BtrfsUtilError;
 
 /// Result type used by this library.
