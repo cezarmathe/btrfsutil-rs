@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    assignees:
+      - "cezarmathe"
+    commit-message:
+      prefix: cargo
+      include: "scope"
+    labels:
+      - "dependencies"
