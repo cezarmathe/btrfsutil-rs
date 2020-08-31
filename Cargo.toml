@@ -19,16 +19,6 @@ rustdoc-args = ["--cfg", "docs_rs"]
 name = "btrfsutil"
 path = "src/lib.rs"
 
-<<<<<<< HEAD
-=======
-
-[build-dependencies]
-bindgen = "0.55"
-serde = { version = "1.0", features = ["derive"] }
-toml = "0.5"
-
-
->>>>>>> 56bbad7... cargo(deps): update bindgen requirement from 0.53 to 0.55
 [dependencies]
 btrfsutil-sys = "1.2.1"
 
