@@ -23,7 +23,7 @@ path = "src/lib.rs"
 
 
 [build-dependencies]
-bindgen = "0.53"
+bindgen = "0.55"
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.5"
 
