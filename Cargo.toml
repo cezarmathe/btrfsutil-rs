@@ -20,6 +20,8 @@ name = "btrfsutil"
 path = "src/lib.rs"
 
 [dependencies]
+btrfsutil-sys = "1.2.1"
+
 bitflags = "1.2"
 chrono = "0.4.11"
 thiserror = "1.0"
