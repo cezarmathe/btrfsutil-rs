@@ -24,7 +24,7 @@ macro_rules! unsafe_wrapper {
     ($unsafe_block: block) => {{
         let errcode: LibErrorCode = unsafe { $unsafe_block };
         match errcode {
-            bindings::btrfs_util_error_BTRFS_UTIL_OK => Result::Ok(()),
+            btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_OK => Result::Ok(()),
             err => {
                 let err = LibError::try_from(err).unwrap();
                 Result::Err(err.into())
