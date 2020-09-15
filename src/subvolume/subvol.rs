@@ -43,11 +43,10 @@ bitflags! {
 }
 
 /// A Btrfs subvolume.
-///
-/// Internally, this contains just the id of the subvolume.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Subvolume {
     id: u64,
+    path: PathBuf,
     fs_root: PathBuf,
 }
 
