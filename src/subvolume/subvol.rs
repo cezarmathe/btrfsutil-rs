@@ -54,6 +54,63 @@ pub struct Subvolume {
 }
 
 impl Subvolume {
+    /// Get a subvolume.
+    ///
+    /// The path must point to the root of a subvolume.
+    pub fn get<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_impl(path.into())
+    }
+
+    fn get_impl(path: &Path) -> Result<Self> {
+        let _ = Self::is_subvolume(path)?;
+
+        let path_cstr = common::path_to_cstr(path);
+        let id: u64 = {
+            let mut id: u64 = 0;
+            unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut id) })?;
+            id
+        };
+
+        Ok(Subvolume::new(id, path.into()))
+    }
+
+    /// Get a subvolume anyway.
+    ///
+    /// If the path is not the root of a subvolume, attempts to use btrfs_util_subvolume_path to
+    /// get it, which requires **CAP_SYS_ADMIN**.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn get_anyway<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_anyway_impl(path.into())
+    }
+
+    fn get_anyway_impl(path: &Path) -> Result<Self> {
+        if let Ok(subvol) = Self::get_impl(path) {
+            return Ok(subvol);
+        }
+
+        let path_cstr = common::path_to_cstr(path);
+        let id: u64 = {
+            let mut id: u64 = 0;
+            unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut id) })?;
+            id
+        };
+
+        let mut path_ret_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), id, &mut path_ret_ptr) })?;
+
+        let path_ret: CString = unsafe { CString::from_raw(path_ret_ptr) };
+
+        Ok(Self::new(id, common::cstr_to_path(&path_ret)))
+    }
+
     /// Create a new subvolume.
     pub fn create(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
         let path_cstr = common::path_to_cstr(path)?;
