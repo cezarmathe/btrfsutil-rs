@@ -6,7 +6,6 @@ use crate::subvolume::Subvolume;
 use crate::BtrfsUtilError;
 use crate::Result;
 
-use std::convert::Into;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 
