@@ -186,14 +186,23 @@ impl Subvolume {
         Ok(subvolumes)
     }
 
-    /// Get the default subvolume
-    pub fn get_default(path: &Path) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
+    /// Get the default subvolume.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn get_default<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_default_impl(path.into())
+    }
+
+    fn get_default_impl(path: &Path) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path);
         let mut id: u64 = 0;
 
         unsafe_wrapper!({ btrfs_util_get_default_subvolume(path_cstr.as_ptr(), &mut id) })?;
 
-        Ok(Subvolume::new(id, path))
+        Ok(Subvolume::new(id, path.into()))
     }
 
     /// Set this subvolume as the default subvolume.
