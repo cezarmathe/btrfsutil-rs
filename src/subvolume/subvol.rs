@@ -1,5 +1,4 @@
 use crate::common;
-use crate::error::GlueError;
 use crate::error::LibError;
 use crate::error::LibErrorCode;
 use crate::qgroup::QgroupInherit;
@@ -8,7 +7,7 @@ use crate::subvolume::SubvolumeIterator;
 use crate::Result;
 
 use std::convert::TryFrom;
-use std::ffi::CStr;
+use std::ffi::CString;
 use std::path::{Path, PathBuf};
 
 use btrfsutil_sys::btrfs_util_create_snapshot;
