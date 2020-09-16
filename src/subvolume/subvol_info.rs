@@ -74,6 +74,12 @@ pub struct SubvolumeInfo {
     pub rtime: Option<NaiveDateTime>,
 }
 
+impl Into<Subvolume> for &SubvolumeInfo {
+    fn into(self) -> Subvolume {
+        Subvolume::new(self.id, self.path)
+    }
+}
+
 impl TryFrom<&Subvolume> for SubvolumeInfo {
     type Error = BtrfsUtilError;
 
