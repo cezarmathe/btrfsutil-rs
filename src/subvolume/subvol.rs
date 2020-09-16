@@ -165,6 +165,9 @@ impl Subvolume {
     }
 
     fn deleted_impl(fs_root: &Path) -> Result<Vec<Subvolume>> {
+        // fixme 16/09/2020: you should probably just return the ids
+        // since the subvolumes have been deleted, they should probably not have a path.
+
         let path_cstr = common::path_to_cstr(fs_root);
         let mut ids_ptr: *mut u64 = std::ptr::null_mut();
         let mut ids_count: u64 = 0;
