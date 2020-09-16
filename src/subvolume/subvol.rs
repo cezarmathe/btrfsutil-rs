@@ -230,19 +230,6 @@ impl Subvolume {
         Ok(())
     }
 
-    /// Get the subvolume for a certain path.
-    pub fn from_path(path: &Path) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
-        let id: *mut u64 = &mut 0;
-
-        unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), id) })?;
-
-        glue_error!(id.is_null(), GlueError::NullPointerReceived);
-
-        let id = unsafe { *id };
-
-        let fs_root = Self::query_fs_root(path, id)?;
-        Ok(Subvolume::new(id, &fs_root))
     /// Check if a path is a Btrfs subvolume.
     ///
     /// Returns Ok if it is a subvolume or Err if otherwise.
@@ -264,54 +251,6 @@ impl Subvolume {
         SubvolumeInfo::try_from(self)
     }
 
-    /// Get the path of this subvolume relative to the filesystem root.
-    fn subvol_path(path: &Path, id: u64) -> Result<PathBuf> {
-        let path_cstr = common::path_to_cstr(path)?;
-        let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
-
-        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), id, &mut str_ptr) })?;
-
-        glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
-
-        let cstr = unsafe { CStr::from_ptr(str_ptr) };
-        let result = match cstr.to_str() {
-            Ok(val) => Ok(PathBuf::from(val)),
-            Err(e) => glue_error!(GlueError::Utf8Error(e)),
-        };
-        unsafe { free(str_ptr as *mut c_void) };
-        result
-    }
-
-    /// Get the path of the filesystem's root mount point.
-    fn query_fs_root(path: &Path, id: u64) -> Result<PathBuf> {
-        let mut path_buf = path.to_owned();
-        let mut subvol_path = Self::subvol_path(path, id)?;
-
-        // Given path may include regular directories after subvolume. Discard
-        // these until path ends with subvolume path.
-        while !path_buf.ends_with(&subvol_path) {
-            assert_eq!(true, path_buf.pop())
-        }
-
-        // Discard subvolume path segments to get filesystem root
-        while subvol_path.pop() {
-            path_buf.pop();
-        }
-
-        // What's left is the filesystem's root mount point.
-        Ok(path_buf)
-    }
-
-    /// Get the path of this subvolume relative to the filesystem root.
-    pub fn rel_path(&self) -> Result<PathBuf> {
-        Self::subvol_path(self.fs_root(), self.id())
-    }
-
-    /// Get the absolute path of this subvolume
-    pub fn abs_path(&self) -> Result<PathBuf> {
-        let mut subpath: PathBuf = self.fs_root.to_owned();
-        subpath.push(self.rel_path()?);
-        Ok(subpath)
     }
 
     /// Create a snapshot of this subvolume.
