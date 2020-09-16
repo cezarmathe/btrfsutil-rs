@@ -318,6 +318,42 @@ impl Subvolume {
     }
 }
 
+impl Into<u64> for &Subvolume {
+    /// Returns the id of the subvolume.
+    #[inline]
+    fn into(self) -> u64 {
+        self.id
+    }
+}
+
+impl Into<PathBuf> for &Subvolume {
+    /// Returns the path of the subvolume.
+    #[inline]
+    fn into(self) -> PathBuf {
+        self.path
+    }
+}
+
+impl TryFrom<&Path> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from a path.
+    #[inline]
+    fn try_from(src: &Path) -> Result<Subvolume> {
+        Subvolume::get_impl(src)
+    }
+}
+
+impl TryFrom<PathBuf> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from a path.
+    #[inline]
+    fn try_from(src: PathBuf) -> Result<Subvolume> {
+        Subvolume::get_impl(src.as_ref())
+    }
+}
+
 impl Into<Result<SubvolumeIterator>> for Subvolume {
     fn into(self) -> Result<SubvolumeIterator> {
         SubvolumeIterator::create(self, None)
