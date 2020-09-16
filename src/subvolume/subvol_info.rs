@@ -1,5 +1,4 @@
 use crate::common;
-use crate::error::GlueError;
 use crate::error::LibError;
 use crate::error::LibErrorCode;
 use crate::subvolume::Subvolume;
@@ -86,7 +85,7 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
     type Error = BtrfsUtilError;
 
     fn try_from(src: &Subvolume) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(src.fs_root())?;
+        let path_cstr = common::path_to_cstr(src.path());
         let btrfs_subvolume_info_ptr: *mut btrfs_util_subvolume_info =
             Box::into_raw(Box::from(btrfs_util_subvolume_info {
                 id: 0,
@@ -123,106 +122,76 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
             btrfs_util_subvolume_info(path_cstr.as_ptr(), src.id(), btrfs_subvolume_info_ptr)
         })?;
 
-        glue_error!(
-            btrfs_subvolume_info_ptr.is_null(),
-            GlueError::NullPointerReceived
-        );
+        let info: Box<btrfs_util_subvolume_info> =
+            unsafe { Box::from_raw(btrfs_subvolume_info_ptr) };
 
-        SubvolumeInfo::try_from(unsafe { Box::from_raw(btrfs_subvolume_info_ptr) })
-    }
-}
-
-macro_rules! handle_uuid {
-    ($src: expr) => {
-        match Uuid::from_slice($src) {
-            Ok(val) => val,
-            Err(e) => glue_error!(GlueError::UuidError(e)),
-        }
-    };
-}
-
-macro_rules! handle_timespec {
-    ($src: expr) => {
-        match NaiveDateTime::from_timestamp_opt($src.tv_sec, $src.tv_nsec as u32) {
-            Some(val) => val,
-            None => glue_error!(GlueError::BadTimespec(format!("{:?}", $src))),
-        }
-    };
-}
-
-impl TryFrom<Box<btrfs_util_subvolume_info>> for SubvolumeInfo {
-    type Error = BtrfsUtilError;
-
-    fn try_from(src: Box<btrfs_util_subvolume_info>) -> Result<Self> {
-        let uuid: Uuid = handle_uuid!(&src.uuid);
-        let parent_uuid_val: Uuid = handle_uuid!(&src.parent_uuid);
-        let received_uuid_val: Uuid = handle_uuid!(&src.received_uuid);
-        let ctime: NaiveDateTime = handle_timespec!(src.ctime);
-        let otime: NaiveDateTime = handle_timespec!(src.otime);
-        let stime_val: NaiveDateTime = handle_timespec!(src.stime);
-        let rtime_val: NaiveDateTime = handle_timespec!(src.rtime);
-
-        let parent_id: Option<u64> = if src.parent_id == 0 {
+        // process the retrieved info struct
+        let uuid: Uuid = Uuid::from_slice(&info.uuid).expect("Failed to get uuid from C");
+        let parent_uuid_val: Uuid =
+            Uuid::from_slice(&info.parent_uuid).expect("Failed to get parent uuid from C");
+        let received_uuid_val: Uuid =
+            Uuid::from_slice(&info.received_uuid).expect("Failed to get received uuid from C");
+        let ctime: DateTime<Local> = Local.timestamp(info.ctime.tv_sec, info.ctime.tv_nsec as u32);
+        let otime: DateTime<Local> = Local.timestamp(info.otime.tv_sec, info.otime.tv_nsec as u32);
+        let stime_val: DateTime<Local> =
+            Local.timestamp(info.stime.tv_sec, info.stime.tv_nsec as u32);
+        let rtime_val: DateTime<Local> =
+            Local.timestamp(info.rtime.tv_sec, info.rtime.tv_nsec as u32);
+        let parent_id: Option<u64> = if info.parent_id == 0 {
             None
         } else {
-            Some(src.parent_id)
+            Some(info.parent_id)
         };
-
-        let dir_id: Option<u64> = if src.dir_id == 0 {
+        let dir_id: Option<u64> = if info.dir_id == 0 {
             None
         } else {
-            Some(src.dir_id)
+            Some(info.dir_id)
         };
-
         let parent_uuid: Option<Uuid> = if parent_uuid_val.is_nil() {
             None
         } else {
             Some(parent_uuid_val)
         };
-
         let received_uuid: Option<Uuid> = if received_uuid_val.is_nil() {
             None
         } else {
             Some(received_uuid_val)
         };
-
-        let stransid: Option<u64> = if src.stransid == 0 {
+        let stransid: Option<u64> = if info.stransid == 0 {
             None
         } else {
-            Some(src.stransid)
+            Some(info.stransid)
         };
-
-        let rtransid: Option<u64> = if src.rtransid == 0 {
+        let rtransid: Option<u64> = if info.rtransid == 0 {
             None
         } else {
-            Some(src.rtransid)
+            Some(info.rtransid)
         };
-
-        let stime: Option<NaiveDateTime> = if stime_val.nanosecond() == 0 && stime_val.second() == 0
-        {
-            None
-        } else {
-            Some(stime_val)
-        };
-
-        let rtime: Option<NaiveDateTime> = if rtime_val.nanosecond() == 0 && rtime_val.second() == 0
-        {
-            None
-        } else {
-            Some(rtime_val)
-        };
+        let stime: Option<DateTime<Local>> =
+            if stime_val.nanosecond() == 0 && stime_val.second() == 0 {
+                None
+            } else {
+                Some(stime_val)
+            };
+        let rtime: Option<DateTime<Local>> =
+            if rtime_val.nanosecond() == 0 && rtime_val.second() == 0 {
+                None
+            } else {
+                Some(rtime_val)
+            };
 
         Ok(Self {
-            id: src.id,
+            id: info.id,
+            path: src.path().to_path_buf(),
             parent_id,
             dir_id,
-            flags: src.flags,
+            flags: info.flags,
             uuid,
             parent_uuid,
             received_uuid,
-            generation: src.generation,
-            ctransid: src.ctransid,
-            otransid: src.otransid,
+            generation: info.generation,
+            ctransid: info.ctransid,
+            otransid: info.otransid,
             stransid,
             rtransid,
             ctime,
