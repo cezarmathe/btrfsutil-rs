@@ -218,8 +218,10 @@ impl Subvolume {
     }
 
     /// Set whether this subvolume is read-only or not.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
     pub fn set_ro(&self, ro: bool) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
+        let path_cstr = common::path_to_cstr(&self.path);
 
         unsafe_wrapper!({ btrfs_util_set_subvolume_read_only(path_cstr.as_ptr(), ro) })?;
 
