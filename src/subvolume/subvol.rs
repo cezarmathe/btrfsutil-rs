@@ -226,13 +226,20 @@ impl Subvolume {
 
         let fs_root = Self::query_fs_root(path, id)?;
         Ok(Subvolume::new(id, &fs_root))
+    /// Check if a path is a Btrfs subvolume.
+    ///
+    /// Returns Ok if it is a subvolume or Err if otherwise.
+    pub fn is_subvolume<'a, P>(path: P) -> Result<()>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::is_subvolume_impl(path.into())
     }
 
-    /// Check if a path is a Btrfs subvolume.
-    pub fn is_subvolume(path: &Path) -> Result<bool> {
-        let path_cstr = common::path_to_cstr(path)?;
+    fn is_subvolume_impl(path: &Path) -> Result<()> {
+        let path_cstr = common::path_to_cstr(path);
 
-        Ok(unsafe_wrapper!({ btrfs_util_is_subvolume(path_cstr.as_ptr()) }).is_ok())
+        unsafe_wrapper!({ btrfs_util_is_subvolume(path_cstr.as_ptr()) })
     }
 
     /// Get information about this subvolume.
