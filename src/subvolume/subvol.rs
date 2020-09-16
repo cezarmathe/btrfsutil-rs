@@ -26,14 +26,18 @@ use btrfsutil_sys::btrfs_util_subvolume_path;
 use libc::{c_void, free};
 
 bitflags! {
-    /// Subvolume delete flags.
+    /// [Subvolume] delete flags.
+    ///
+    /// [Subvolume]:struct.Subvolume.html
     pub struct DeleteFlags: i32 {
         /// Recursive.
         const RECURSIVE = btrfsutil_sys::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
     }
 }
 bitflags! {
-    /// Subvolume snapshot flags.
+    /// [Subvolume] snapshot flags.
+    ///
+    /// [Subvolume]:struct.Subvolume.html
     pub struct SnapshotFlags: i32 {
         /// Read-only.
         const READ_ONLY	= btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
