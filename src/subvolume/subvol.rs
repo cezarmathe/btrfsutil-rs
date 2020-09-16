@@ -130,10 +130,12 @@ impl Subvolume {
 
     /// Check whether this subvolume is read-only.
     pub fn is_ro(&self) -> Result<bool> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
-        let mut ro: bool = false;
-
-        unsafe_wrapper!({ btrfs_util_get_subvolume_read_only(path_cstr.as_ptr(), &mut ro) })?;
+        let path_cstr = common::path_to_cstr(&self.path);
+        let ro: bool = {
+            let mut ro = false;
+            unsafe_wrapper!({ btrfs_util_get_subvolume_read_only(path_cstr.as_ptr(), &mut ro) })?;
+            ro
+        };
 
         Ok(ro)
     }
