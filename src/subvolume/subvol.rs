@@ -279,22 +279,25 @@ impl Subvolume {
     }
 
     /// Get the id of this subvolume.
+    #[inline]
     pub fn id(&self) -> u64 {
         self.id
     }
 
-    /// Get the filesystem root of this subvolume.
-    pub fn fs_root(&self) -> &Path {
-        &self.fs_root
+    /// Get the path of this subvolume.
+    #[inline]
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
-    /// Create a new Subvolume from an id.
+    /// Create a new subvolume from an id and a path.
     ///
     /// Restricted to the crate.
-    pub(crate) fn new(id: u64, fs_root: &Path) -> Self {
+    #[inline]
+    pub(crate) fn new(id: u64, path: PathBuf) -> Self {
         Self {
             id,
-            fs_root: fs_root.to_owned(),
+            path: path.into(),
         }
     }
 }
