@@ -21,6 +21,7 @@ use btrfsutil_sys::btrfs_util_set_default_subvolume;
 use btrfsutil_sys::btrfs_util_set_subvolume_read_only;
 use btrfsutil_sys::btrfs_util_subvolume_id;
 use btrfsutil_sys::btrfs_util_subvolume_path;
+use btrfsutil_sys::btrfs_util_wait_sync;
 
 use libc::{c_void, free};
 
@@ -123,14 +124,15 @@ impl Subvolume {
         let path_cstr = common::path_to_cstr(path);
         let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
 
-        unsafe_wrapper!({
-            btrfs_util_create_subvolume(
-                path_cstr.as_ptr(),
-                0,
-                std::ptr::null_mut(), /* make use of the async transid and wait on it later */
-                qgroup_ptr,
-            )
-        })?;
+        let transid: u64 = {
+            let mut transid: u64 = 0;
+            unsafe_wrapper!({
+                btrfs_util_create_subvolume(path_cstr.as_ptr(), 0, &mut transid, qgroup_ptr)
+            })?;
+            transid
+        };
+
+        unsafe_wrapper!({ btrfs_util_wait_sync(path_cstr.as_ptr(), transid) })?;
 
         Self::get(path)
     }
