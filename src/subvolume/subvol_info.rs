@@ -11,8 +11,11 @@ use std::path::PathBuf;
 
 use btrfsutil_sys::btrfs_util_subvolume_info;
 
-use chrono::NaiveDateTime;
+use chrono::DateTime;
+use chrono::Local;
+use chrono::TimeZone;
 use chrono::Timelike;
+
 use uuid::Uuid;
 
 /// Information about a Btrfs subvolume.
@@ -62,15 +65,15 @@ pub struct SubvolumeInfo {
     /// received. See the note on [received_uuid](#structfield.received_uuid).
     pub rtransid: Option<u64>,
     /// Time when an inode in this subvolume was last changed.
-    pub ctime: NaiveDateTime,
+    pub ctime: DateTime<Local>,
     /// Time when this subvolume was created.
-    pub otime: NaiveDateTime,
+    pub otime: DateTime<Local>,
     /// Not well-defined, usually zero unless it was set otherwise. See the note on
     /// [received_uuid](#structfield.received_uuid).
-    pub stime: Option<NaiveDateTime>,
+    pub stime: Option<DateTime<Local>>,
     /// Time when this subvolume was received, or zero if this subvolume was not received. See the
     /// [received_uuid](#structfield.received_uuid).
-    pub rtime: Option<NaiveDateTime>,
+    pub rtime: Option<DateTime<Local>>,
 }
 
 impl Into<Subvolume> for &SubvolumeInfo {
