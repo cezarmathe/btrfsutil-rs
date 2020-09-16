@@ -154,8 +154,17 @@ impl Subvolume {
     }
 
     /// Get a list of subvolumes which have been deleted but not yet cleaned up.
-    pub fn deleted(fs_root: &Path) -> Result<Vec<Subvolume>> {
-        let path_cstr = common::path_to_cstr(fs_root)?;
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn deleted<'a, F>(fs_root: F) -> Result<Vec<Self>>
+    where
+        F: Into<&'a Path>,
+    {
+        Self::deleted_impl(fs_root.into())
+    }
+
+    fn deleted_impl(fs_root: &Path) -> Result<Vec<Subvolume>> {
+        let path_cstr = common::path_to_cstr(fs_root);
         let mut ids_ptr: *mut u64 = std::ptr::null_mut();
         let mut ids_count: u64 = 0;
 
@@ -167,18 +176,17 @@ impl Subvolume {
             return Ok(Vec::new());
         }
 
-        glue_error!(ids_ptr.is_null(), GlueError::NullPointerReceived);
-
         let subvolume_ids: Vec<u64> = unsafe {
-            let v = std::slice::from_raw_parts(ids_ptr, ids_count as usize).to_owned();
+            let slice = std::slice::from_raw_parts(ids_ptr, ids_count as usize);
+            let vec = slice.to_vec();
             free(ids_ptr as *mut c_void);
-            v
+            vec
         };
 
         let subvolumes: Vec<Subvolume> = {
             let mut subvolumes: Vec<Subvolume> = Vec::with_capacity(ids_count as usize);
             for id in subvolume_ids {
-                subvolumes.push(Subvolume::new(id, fs_root));
+                subvolumes.push(Subvolume::try_from(id)?);
             }
             subvolumes
         };
