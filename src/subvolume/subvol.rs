@@ -197,10 +197,12 @@ impl Subvolume {
     }
 
     /// Set this subvolume as the default subvolume.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
     pub fn set_default(&self) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.fs_root)?;
+        let path_cstr = common::path_to_cstr(&self.path);
 
-        unsafe_wrapper!({ btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.id()) })?;
+        unsafe_wrapper!({ btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.id) })?;
 
         Ok(())
     }
