@@ -326,6 +326,30 @@ impl Into<u64> for &Subvolume {
     }
 }
 
+impl TryFrom<u64> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from an id.
+    ///
+    /// This function will panic if it cannot retrieve the current working directory.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    fn try_from(src: u64) -> Result<Subvolume> {
+        let path_cstr: CString = common::path_to_cstr(
+            std::env::current_dir()
+                .expect("Could not get the current working directory")
+                .as_ref(),
+        );
+        let mut path_ret_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), src, &mut path_ret_ptr) })?;
+
+        let path_ret: CString = unsafe { CString::from_raw(path_ret_ptr) };
+
+        Ok(Self::new(src, common::cstr_to_path(&path_ret)))
+    }
+}
+
 impl Into<PathBuf> for &Subvolume {
     /// Returns the path of the subvolume.
     #[inline]
