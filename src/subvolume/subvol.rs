@@ -112,15 +112,28 @@ impl Subvolume {
     }
 
     /// Create a new subvolume.
-    pub fn create(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
+    pub fn create<'a, P, Q>(path: P, qgroup: Q) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+        Q: Into<Option<QgroupInherit>>,
+    {
+        Self::create(path.into(), qgroup.into())
+    }
+
+    fn create_impl(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path);
         let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
 
         unsafe_wrapper!({
-            btrfs_util_create_subvolume(path_cstr.as_ptr(), 0, std::ptr::null_mut(), qgroup_ptr)
+            btrfs_util_create_subvolume(
+                path_cstr.as_ptr(),
+                0,
+                std::ptr::null_mut(), /* make use of the async transid and wait on it later */
+                qgroup_ptr,
+            )
         })?;
 
-        Self::from_path(path)
+        Self::get(path)
     }
 
     /// Delete a subvolume.
