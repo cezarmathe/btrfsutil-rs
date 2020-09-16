@@ -8,6 +8,7 @@ use crate::Result;
 
 use std::convert::Into;
 use std::convert::TryFrom;
+use std::path::PathBuf;
 
 use btrfsutil_sys::btrfs_util_subvolume_info;
 
@@ -17,11 +18,15 @@ use uuid::Uuid;
 
 /// Information about a Btrfs subvolume.
 ///
-/// Analogous to [btrfs_util_subvolume_info](../bindings/struct.btrfs_util_subvolume_info.html).
-#[derive(Clone, Debug)]
+/// Contains everything from [btrfs_util_subvolume_info] plus the path of the subvolume.
+///
+/// [btrfs_util_subvolume_info]: https://docs.rs/btrfsutil-sys/1.2.1/btrfsutil_sys/struct.btrfs_util_subvolume_info.html
+#[derive(Clone, Debug, PartialEq)]
 pub struct SubvolumeInfo {
     /// ID of this subvolume, unique across the filesystem.
     pub id: u64,
+    /// The path of the subvolume.
+    pub path: PathBuf,
     /// ID of the subvolume which contains this subvolume, or zero for the root subvolume
     /// ([BTRFS_FS_TREE_OBJECTID]) or orphaned subvolumes (i.e., subvolumes which have been
     /// deleted but not yet cleaned up).
