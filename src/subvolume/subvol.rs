@@ -51,7 +51,6 @@ bitflags! {
 pub struct Subvolume {
     id: u64,
     path: PathBuf,
-    fs_root: PathBuf,
 }
 
 impl Subvolume {
