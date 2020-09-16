@@ -260,17 +260,24 @@ impl Subvolume {
         SubvolumeInfo::try_from(self)
     }
 
+    /// Create a snapshot of this subvolume.
+    pub fn snapshot<'a, P, F, Q>(&self, path: P, flags: F, qgroup: Q) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+        F: Into<Option<SnapshotFlags>>,
+        Q: Into<Option<QgroupInherit>>,
+    {
+        self.snapshot_impl(path.into(), flags.into(), qgroup.into())
     }
 
-    /// Create a snapshot of this subvolume.
-    pub fn snapshot(
+    fn snapshot_impl(
         &self,
         path: &Path,
         flags: Option<SnapshotFlags>,
         qgroup: Option<QgroupInherit>,
     ) -> Result<Self> {
-        let path_src_cstr = common::path_to_cstr(&self.abs_path()?)?;
-        let path_dest_cstr = common::path_to_cstr(path)?;
+        let path_src_cstr = common::path_to_cstr(&self.path);
+        let path_dest_cstr = common::path_to_cstr(path);
         let flags_val = flags.map(|v| v.bits()).unwrap_or(0);
         let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
 
@@ -279,12 +286,12 @@ impl Subvolume {
                 path_src_cstr.as_ptr(),
                 path_dest_cstr.as_ptr(),
                 flags_val,
-                std::ptr::null_mut(), // should be changed in the future for async support
+                std::ptr::null_mut(), /* make use of the async transid and wait on it later */
                 qgroup_ptr,
             )
         })?;
 
-        Ok(Self::from_path(path)?)
+        Self::get(path)
     }
 
     /// Get the id of this subvolume.
