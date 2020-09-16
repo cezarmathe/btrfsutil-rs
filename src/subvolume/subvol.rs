@@ -124,8 +124,15 @@ impl Subvolume {
     }
 
     /// Delete a subvolume.
-    pub fn delete(self, flags: Option<DeleteFlags>) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
+    pub fn delete<D>(self, flags: D) -> Result<()>
+    where
+        D: Into<Option<DeleteFlags>>,
+    {
+        Self::delete_impl(self, flags.into())
+    }
+
+    fn delete_impl(self, flags: Option<DeleteFlags>) -> Result<()> {
+        let path_cstr = common::path_to_cstr(&self.path);
         let flags_val = flags.map(|v| v.bits()).unwrap_or(0);
 
         unsafe_wrapper!({ btrfs_util_delete_subvolume(path_cstr.as_ptr(), flags_val) })?;
