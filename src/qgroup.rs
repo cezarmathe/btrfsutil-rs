@@ -72,6 +72,11 @@ impl QgroupInherit {
         };
         Ok(ids)
     }
+
+    #[inline]
+    pub(crate) fn as_ptr(&self) -> *mut btrfs_util_qgroup_inherit {
+        self.0
+    }
 }
 
 impl Drop for QgroupInherit {
