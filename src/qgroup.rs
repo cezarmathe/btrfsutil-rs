@@ -32,7 +32,14 @@ impl QgroupInherit {
     }
 
     /// Add inheritance from a qgroup to a qgroup inheritance specifier.
-    pub fn add(&mut self, qgroup_id: u64) -> Result<()> {
+    pub fn add<U>(&mut self, qgroup_id: U) -> Result<()>
+    where
+        U: Into<u64>,
+    {
+        self.add_impl(qgroup_id.into())
+    }
+
+    fn add_impl(&mut self, qgroup_id: u64) -> Result<()> {
         let qgroup_ptr_initial: *mut btrfs_util_qgroup_inherit = self.as_ptr();
         let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = self.as_ptr();
 
