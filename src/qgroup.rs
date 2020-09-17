@@ -26,8 +26,6 @@ impl QgroupInherit {
 
         unsafe_wrapper!({ btrfs_util_create_qgroup_inherit(0, &mut qgroup_ptr) })?;
 
-        glue_error!(qgroup_ptr.is_null(), GlueError::NullPointerReceived);
-
         Ok(Self(qgroup_ptr))
     }
 
@@ -44,8 +42,6 @@ impl QgroupInherit {
         let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = self.as_ptr();
 
         unsafe_wrapper!({ btrfs_util_qgroup_inherit_add_group(&mut qgroup_ptr, qgroup_id) })?;
-
-        glue_error!(qgroup_ptr.is_null(), GlueError::NullPointerReceived);
 
         if qgroup_ptr != qgroup_ptr_initial {
             self.0 = qgroup_ptr;
@@ -71,8 +67,6 @@ impl QgroupInherit {
         if qgroup_ids_count == 0 {
             return Ok(Vec::new());
         }
-
-        glue_error!(qgroup_ids_ptr.is_null(), GlueError::NullPointerReceived);
 
         let ids: Vec<u64> = unsafe {
             std::slice::from_raw_parts(qgroup_ids_ptr, qgroup_ids_count as usize).to_owned()
