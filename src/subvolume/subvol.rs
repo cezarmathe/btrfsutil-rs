@@ -64,7 +64,7 @@ impl Subvolume {
     }
 
     fn get_impl(path: &Path) -> Result<Self> {
-        let _ = Self::is_subvolume(path)?;
+        Self::is_subvolume(path)?;
 
         let path_cstr = common::path_to_cstr(path);
         let id: u64 = {
@@ -330,7 +330,7 @@ impl Subvolume {
     pub(crate) fn new(id: u64, path: PathBuf) -> Self {
         Self {
             id,
-            path: path.into(),
+            path,
         }
     }
 }
