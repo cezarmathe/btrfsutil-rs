@@ -3,7 +3,6 @@ use crate::error::LibError;
 use crate::error::LibErrorCode;
 use crate::qgroup::QgroupInherit;
 use crate::subvolume::SubvolumeInfo;
-use crate::subvolume::SubvolumeIterator;
 use crate::Result;
 
 use std::convert::TryFrom;
@@ -393,12 +392,6 @@ impl TryFrom<PathBuf> for Subvolume {
     #[inline]
     fn try_from(src: PathBuf) -> Result<Subvolume> {
         Subvolume::get_impl(src.as_ref())
-    }
-}
-
-impl Into<Result<SubvolumeIterator>> for Subvolume {
-    fn into(self) -> Result<SubvolumeIterator> {
-        SubvolumeIterator::create(self, None)
     }
 }
 
