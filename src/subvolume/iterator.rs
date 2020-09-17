@@ -1,12 +1,13 @@
 use crate::common;
-use crate::error::GlueError;
 use crate::error::LibError;
 use crate::error::LibErrorCode;
 use crate::subvolume::Subvolume;
 use crate::Result;
 
 use std::convert::TryFrom;
-use std::path::PathBuf;
+use std::convert::TryInto;
+use std::ffi::CString;
+use std::path::Path;
 
 use btrfsutil_sys::btrfs_util_create_subvolume_iterator;
 use btrfsutil_sys::btrfs_util_destroy_subvolume_iterator;
@@ -21,90 +22,97 @@ bitflags! {
     }
 }
 
-/// Wrapper around the raw subvolume iterator
-struct RawIterator {
-    raw_iter: *mut btrfs_util_subvolume_iterator,
-    fs_root: PathBuf,
-}
+/// A subvolume iterator.
+pub struct SubvolumeIterator(*mut btrfs_util_subvolume_iterator);
 
-impl RawIterator {
-    fn next(&self) -> Result<Subvolume> {
-        let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
-        let mut id: u64 = 0;
+impl SubvolumeIterator {
+    /// Create a new subvolume iterator.
+    pub fn new<'a, P, F>(path: P, flags: F) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+        F: Into<Option<SubvolumeIteratorFlags>>,
+    {
+        Self::new_impl(path.into(), flags.into())
+    }
 
-        unsafe_wrapper!({
-            btrfs_util_subvolume_iterator_next(self.raw_iter, &mut str_ptr, &mut id)
-        })?;
+    fn new_impl(path: &Path, flags: Option<SubvolumeIteratorFlags>) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path);
+        let flags_val = if let Some(val) = flags { val.bits() } else { 0 };
 
-        glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
-        glue_error!(
-            id < btrfsutil_sys::BTRFS_FS_TREE_OBJECTID,
-            GlueError::BadId(id)
-        );
+        let raw_iterator_ptr: *mut btrfs_util_subvolume_iterator = {
+            let mut raw_iterator_ptr: *mut btrfs_util_subvolume_iterator = std::ptr::null_mut();
+            unsafe_wrapper!({
+                btrfs_util_create_subvolume_iterator(
+                    path_cstr.as_ptr(),
+                    0, // read below
+                    flags_val,
+                    &mut raw_iterator_ptr,
+                )
+            })?;
+            // using 0 instead of an id is intentional
+            // https://github.com/kdave/btrfs-progs/blob/11acf45eea6dd81e891564967051e2bb10bd25f7/libbtrfsutil/subvolume.c#L971
+            // if we specify an id then libbtrfsutil will use elevated privileges to search for
+            // subvolumes
+            // if we don't, then it will use elevated privileges only if the current user is root
+            raw_iterator_ptr
+        };
 
-        Ok(Subvolume::new(id, &self.fs_root))
+        Ok(Self(raw_iterator_ptr))
     }
 }
 
-impl Drop for RawIterator {
-    fn drop(&mut self) {
-        unsafe {
-            btrfs_util_destroy_subvolume_iterator(self.raw_iter);
+impl Iterator for SubvolumeIterator {
+    type Item = Result<Subvolume>;
+
+    fn next(&mut self) -> Option<Result<Subvolume>> {
+        let mut cstr_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+        let mut id: u64 = 0;
+
+        if let Err(e) =
+            unsafe_wrapper!({ btrfs_util_subvolume_iterator_next(self.0, &mut cstr_ptr, &mut id) })
+        {
+            if e == LibError::StopIteration {
+                None
+            } else {
+                Err(e).into()
+            }
+        } else {
+            if !cstr_ptr.is_null() {
+                let path = common::cstr_to_path(unsafe { CString::from_raw(cstr_ptr).as_ref() });
+                Subvolume::get(path.as_path()).into()
+            } else if id != 0 {
+                Subvolume::try_from(id).into()
+            } else {
+                panic!("subvolume iterator returned both a null path")
+            }
         }
     }
 }
 
-/// A Subvolume iterator.
-pub struct SubvolumeIterator(Vec<Subvolume>);
-
-impl SubvolumeIterator {
-    /// Create a new subvolume iterator.
-    pub fn create(subvolume: Subvolume, flags: Option<SubvolumeIteratorFlags>) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(subvolume.fs_root())?;
-        let flags_val = if let Some(val) = flags { val.bits() } else { 0 };
-        let mut iterator_ptr: *mut btrfs_util_subvolume_iterator = std::ptr::null_mut();
-
-        unsafe_wrapper!({
-            btrfs_util_create_subvolume_iterator(
-                path_cstr.as_ptr(),
-                subvolume.id(),
-                flags_val,
-                &mut iterator_ptr,
-            )
-        })?;
-
-        glue_error!(iterator_ptr.is_null(), GlueError::NullPointerReceived);
-
-        let items: Vec<Subvolume> = {
-            let mut items = Vec::new();
-            let raw_iterator = RawIterator {
-                raw_iter: iterator_ptr,
-                fs_root: subvolume.fs_root().to_owned(),
-            };
-            loop {
-                match raw_iterator.next() {
-                    Ok(val) => items.push(val),
-                    Err(e) => {
-                        if e == LibError::StopIteration {
-                            break;
-                        } else {
-                            return Result::Err(e);
-                        }
-                    }
-                }
-            }
-            items
-        };
-
-        Ok(Self(items))
+impl Drop for SubvolumeIterator {
+    fn drop(&mut self) {
+        unsafe {
+            btrfs_util_destroy_subvolume_iterator(self.0);
+        }
     }
 }
 
-impl IntoIterator for SubvolumeIterator {
-    type Item = Subvolume;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
+impl TryFrom<&Subvolume> for SubvolumeIterator {
+    type Error = LibError;
 
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
+    /// Same as SubvolumeIterator::new with no flags.
+    #[inline]
+    fn try_from(src: &Subvolume) -> Result<SubvolumeIterator> {
+        SubvolumeIterator::new_impl(src.path(), None)
+    }
+}
+
+impl TryInto<Vec<Subvolume>> for SubvolumeIterator {
+    type Error = LibError;
+
+    /// Same as SubvolumeIterator.collect::<Result<Vec<Subvolume>>>.
+    #[inline]
+    fn try_into(self) -> Result<Vec<Subvolume>> {
+        self.collect::<Result<Vec<Subvolume>>>()
     }
 }
