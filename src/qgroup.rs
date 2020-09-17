@@ -11,6 +11,9 @@ use btrfsutil_sys::btrfs_util_qgroup_inherit;
 use btrfsutil_sys::btrfs_util_qgroup_inherit_add_group;
 use btrfsutil_sys::btrfs_util_qgroup_inherit_get_groups;
 
+use libc::c_void;
+use libc::free;
+
 /// Qgroup inheritance specifier.
 ///
 /// Wrapper around [btrfs_util_qgroup_inherit].
@@ -68,8 +71,12 @@ impl QgroupInherit {
             return Ok(Vec::new());
         }
 
-        let ids: Vec<u64> = unsafe {
-            std::slice::from_raw_parts(qgroup_ids_ptr, qgroup_ids_count as usize).to_owned()
+        let ids: Vec<u64> = {
+            let slice =
+                unsafe { std::slice::from_raw_parts(qgroup_ids_ptr, qgroup_ids_count as usize) };
+            let vec = slice.to_vec();
+            unsafe { free(qgroup_ids_ptr as *mut c_void) };
+            vec
         };
         Ok(ids)
     }
