@@ -1,14 +1,11 @@
 use crate::common;
-use crate::error::GlueError;
 use crate::error::LibError;
-use crate::error::LibErrorCode;
 use crate::qgroup::QgroupInherit;
 use crate::subvolume::SubvolumeInfo;
-use crate::subvolume::SubvolumeIterator;
 use crate::Result;
 
 use std::convert::TryFrom;
-use std::ffi::CStr;
+use std::ffi::CString;
 use std::path::{Path, PathBuf};
 
 use btrfsutil_sys::btrfs_util_create_snapshot;
@@ -22,18 +19,23 @@ use btrfsutil_sys::btrfs_util_set_default_subvolume;
 use btrfsutil_sys::btrfs_util_set_subvolume_read_only;
 use btrfsutil_sys::btrfs_util_subvolume_id;
 use btrfsutil_sys::btrfs_util_subvolume_path;
+use btrfsutil_sys::btrfs_util_wait_sync;
 
 use libc::{c_void, free};
 
 bitflags! {
-    /// Subvolume delete flags.
+    /// [Subvolume] delete flags.
+    ///
+    /// [Subvolume]:struct.Subvolume.html
     pub struct DeleteFlags: i32 {
         /// Recursive.
         const RECURSIVE = btrfsutil_sys::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
     }
 }
 bitflags! {
-    /// Subvolume snapshot flags.
+    /// [Subvolume] snapshot flags.
+    ///
+    /// [Subvolume]:struct.Subvolume.html
     pub struct SnapshotFlags: i32 {
         /// Read-only.
         const READ_ONLY	= btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
@@ -47,25 +49,102 @@ bitflags! {
 pub struct Subvolume {
     id: u64,
     path: PathBuf,
-    fs_root: PathBuf,
 }
 
 impl Subvolume {
+    /// Get a subvolume.
+    ///
+    /// The path must point to the root of a subvolume.
+    pub fn get<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_impl(path.into())
+    }
+
+    fn get_impl(path: &Path) -> Result<Self> {
+        Self::is_subvolume(path)?;
+
+        let path_cstr = common::path_to_cstr(path);
+        let id: u64 = {
+            let mut id: u64 = 0;
+            unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut id) })?;
+            id
+        };
+
+        Ok(Subvolume::new(id, path.into()))
+    }
+
+    /// Get a subvolume anyway.
+    ///
+    /// If the path is not the root of a subvolume, attempts to use btrfs_util_subvolume_path to
+    /// get it, which requires **CAP_SYS_ADMIN**.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn get_anyway<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_anyway_impl(path.into())
+    }
+
+    fn get_anyway_impl(path: &Path) -> Result<Self> {
+        if let Ok(subvol) = Self::get_impl(path) {
+            return Ok(subvol);
+        }
+
+        let path_cstr = common::path_to_cstr(path);
+        let id: u64 = {
+            let mut id: u64 = 0;
+            unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), &mut id) })?;
+            id
+        };
+
+        let mut path_ret_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), id, &mut path_ret_ptr) })?;
+
+        let path_ret: CString = unsafe { CString::from_raw(path_ret_ptr) };
+
+        Ok(Self::new(id, common::cstr_to_path(&path_ret)))
+    }
+
     /// Create a new subvolume.
-    pub fn create(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
-        let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
+    pub fn create<'a, P, Q>(path: P, qgroup: Q) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+        Q: Into<Option<QgroupInherit>>,
+    {
+        Self::create_impl(path.into(), qgroup.into())
+    }
 
-        unsafe_wrapper!({
-            btrfs_util_create_subvolume(path_cstr.as_ptr(), 0, std::ptr::null_mut(), qgroup_ptr)
-        })?;
+    fn create_impl(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path);
+        let qgroup_ptr = qgroup.map(|v| v.as_ptr()).unwrap_or(std::ptr::null_mut());
 
-        Self::from_path(path)
+        let transid: u64 = {
+            let mut transid: u64 = 0;
+            unsafe_wrapper!({
+                btrfs_util_create_subvolume(path_cstr.as_ptr(), 0, &mut transid, qgroup_ptr)
+            })?;
+            transid
+        };
+
+        unsafe_wrapper!({ btrfs_util_wait_sync(path_cstr.as_ptr(), transid) })?;
+
+        Self::get(path)
     }
 
     /// Delete a subvolume.
-    pub fn delete(self, flags: Option<DeleteFlags>) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
+    pub fn delete<D>(self, flags: D) -> Result<()>
+    where
+        D: Into<Option<DeleteFlags>>,
+    {
+        Self::delete_impl(self, flags.into())
+    }
+
+    fn delete_impl(self, flags: Option<DeleteFlags>) -> Result<()> {
+        let path_cstr = common::path_to_cstr(&self.path);
         let flags_val = flags.map(|v| v.bits()).unwrap_or(0);
 
         unsafe_wrapper!({ btrfs_util_delete_subvolume(path_cstr.as_ptr(), flags_val) })?;
@@ -74,8 +153,20 @@ impl Subvolume {
     }
 
     /// Get a list of subvolumes which have been deleted but not yet cleaned up.
-    pub fn deleted(fs_root: &Path) -> Result<Vec<Subvolume>> {
-        let path_cstr = common::path_to_cstr(fs_root)?;
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn deleted<'a, F>(fs_root: F) -> Result<Vec<Self>>
+    where
+        F: Into<&'a Path>,
+    {
+        Self::deleted_impl(fs_root.into())
+    }
+
+    fn deleted_impl(fs_root: &Path) -> Result<Vec<Subvolume>> {
+        // fixme 16/09/2020: you should probably just return the ids
+        // since the subvolumes have been deleted, they should probably not have a path.
+
+        let path_cstr = common::path_to_cstr(fs_root);
         let mut ids_ptr: *mut u64 = std::ptr::null_mut();
         let mut ids_count: u64 = 0;
 
@@ -87,18 +178,17 @@ impl Subvolume {
             return Ok(Vec::new());
         }
 
-        glue_error!(ids_ptr.is_null(), GlueError::NullPointerReceived);
-
         let subvolume_ids: Vec<u64> = unsafe {
-            let v = std::slice::from_raw_parts(ids_ptr, ids_count as usize).to_owned();
+            let slice = std::slice::from_raw_parts(ids_ptr, ids_count as usize);
+            let vec = slice.to_vec();
             free(ids_ptr as *mut c_void);
-            v
+            vec
         };
 
         let subvolumes: Vec<Subvolume> = {
             let mut subvolumes: Vec<Subvolume> = Vec::with_capacity(ids_count as usize);
             for id in subvolume_ids {
-                subvolumes.push(Subvolume::new(id, fs_root));
+                subvolumes.push(Subvolume::try_from(id)?);
             }
             subvolumes
         };
@@ -106,64 +196,73 @@ impl Subvolume {
         Ok(subvolumes)
     }
 
-    /// Get the default subvolume
-    pub fn get_default(path: &Path) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
+    /// Get the default subvolume.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    pub fn get_default<'a, P>(path: P) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::get_default_impl(path.into())
+    }
+
+    fn get_default_impl(path: &Path) -> Result<Self> {
+        let path_cstr = common::path_to_cstr(path);
         let mut id: u64 = 0;
 
         unsafe_wrapper!({ btrfs_util_get_default_subvolume(path_cstr.as_ptr(), &mut id) })?;
 
-        Ok(Subvolume::new(id, path))
+        Ok(Subvolume::new(id, path.into()))
     }
 
     /// Set this subvolume as the default subvolume.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
     pub fn set_default(&self) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.fs_root)?;
+        let path_cstr = common::path_to_cstr(&self.path);
 
-        unsafe_wrapper!({ btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.id()) })?;
+        unsafe_wrapper!({ btrfs_util_set_default_subvolume(path_cstr.as_ptr(), self.id) })?;
 
         Ok(())
     }
 
     /// Check whether this subvolume is read-only.
     pub fn is_ro(&self) -> Result<bool> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
-        let mut ro: bool = false;
-
-        unsafe_wrapper!({ btrfs_util_get_subvolume_read_only(path_cstr.as_ptr(), &mut ro) })?;
+        let path_cstr = common::path_to_cstr(&self.path);
+        let ro: bool = {
+            let mut ro = false;
+            unsafe_wrapper!({ btrfs_util_get_subvolume_read_only(path_cstr.as_ptr(), &mut ro) })?;
+            ro
+        };
 
         Ok(ro)
     }
 
     /// Set whether this subvolume is read-only or not.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
     pub fn set_ro(&self, ro: bool) -> Result<()> {
-        let path_cstr = common::path_to_cstr(&self.abs_path()?)?;
+        let path_cstr = common::path_to_cstr(&self.path);
 
         unsafe_wrapper!({ btrfs_util_set_subvolume_read_only(path_cstr.as_ptr(), ro) })?;
 
         Ok(())
     }
 
-    /// Get the subvolume for a certain path.
-    pub fn from_path(path: &Path) -> Result<Self> {
-        let path_cstr = common::path_to_cstr(path)?;
-        let id: *mut u64 = &mut 0;
-
-        unsafe_wrapper!({ btrfs_util_subvolume_id(path_cstr.as_ptr(), id) })?;
-
-        glue_error!(id.is_null(), GlueError::NullPointerReceived);
-
-        let id = unsafe { *id };
-
-        let fs_root = Self::query_fs_root(path, id)?;
-        Ok(Subvolume::new(id, &fs_root))
+    /// Check if a path is a Btrfs subvolume.
+    ///
+    /// Returns Ok if it is a subvolume or Err if otherwise.
+    pub fn is_subvolume<'a, P>(path: P) -> Result<()>
+    where
+        P: Into<&'a Path>,
+    {
+        Self::is_subvolume_impl(path.into())
     }
 
-    /// Check if a path is a Btrfs subvolume.
-    pub fn is_subvolume(path: &Path) -> Result<bool> {
-        let path_cstr = common::path_to_cstr(path)?;
+    fn is_subvolume_impl(path: &Path) -> Result<()> {
+        let path_cstr = common::path_to_cstr(path);
 
-        Ok(unsafe_wrapper!({ btrfs_util_is_subvolume(path_cstr.as_ptr()) }).is_ok())
+        unsafe_wrapper!({ btrfs_util_is_subvolume(path_cstr.as_ptr()) })
     }
 
     /// Get information about this subvolume.
@@ -171,105 +270,132 @@ impl Subvolume {
         SubvolumeInfo::try_from(self)
     }
 
-    /// Get the path of this subvolume relative to the filesystem root.
-    fn subvol_path(path: &Path, id: u64) -> Result<PathBuf> {
-        let path_cstr = common::path_to_cstr(path)?;
-        let mut str_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
-
-        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), id, &mut str_ptr) })?;
-
-        glue_error!(str_ptr.is_null(), GlueError::NullPointerReceived);
-
-        let cstr = unsafe { CStr::from_ptr(str_ptr) };
-        let result = match cstr.to_str() {
-            Ok(val) => Ok(PathBuf::from(val)),
-            Err(e) => glue_error!(GlueError::Utf8Error(e)),
-        };
-        unsafe { free(str_ptr as *mut c_void) };
-        result
-    }
-
-    /// Get the path of the filesystem's root mount point.
-    fn query_fs_root(path: &Path, id: u64) -> Result<PathBuf> {
-        let mut path_buf = path.to_owned();
-        let mut subvol_path = Self::subvol_path(path, id)?;
-
-        // Given path may include regular directories after subvolume. Discard
-        // these until path ends with subvolume path.
-        while !path_buf.ends_with(&subvol_path) {
-            assert_eq!(true, path_buf.pop())
-        }
-
-        // Discard subvolume path segments to get filesystem root
-        while subvol_path.pop() {
-            path_buf.pop();
-        }
-
-        // What's left is the filesystem's root mount point.
-        Ok(path_buf)
-    }
-
-    /// Get the path of this subvolume relative to the filesystem root.
-    pub fn rel_path(&self) -> Result<PathBuf> {
-        Self::subvol_path(self.fs_root(), self.id())
-    }
-
-    /// Get the absolute path of this subvolume
-    pub fn abs_path(&self) -> Result<PathBuf> {
-        let mut subpath: PathBuf = self.fs_root.to_owned();
-        subpath.push(self.rel_path()?);
-        Ok(subpath)
-    }
-
     /// Create a snapshot of this subvolume.
-    pub fn snapshot(
+    pub fn snapshot<'a, P, F, Q>(&self, path: P, flags: F, qgroup: Q) -> Result<Self>
+    where
+        P: Into<&'a Path>,
+        F: Into<Option<SnapshotFlags>>,
+        Q: Into<Option<QgroupInherit>>,
+    {
+        self.snapshot_impl(path.into(), flags.into(), qgroup.into())
+    }
+
+    fn snapshot_impl(
         &self,
         path: &Path,
         flags: Option<SnapshotFlags>,
         qgroup: Option<QgroupInherit>,
     ) -> Result<Self> {
-        let path_src_cstr = common::path_to_cstr(&self.abs_path()?)?;
-        let path_dest_cstr = common::path_to_cstr(path)?;
+        let path_src_cstr = common::path_to_cstr(&self.path);
+        let path_dest_cstr = common::path_to_cstr(path);
         let flags_val = flags.map(|v| v.bits()).unwrap_or(0);
-        let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
+        let qgroup_ptr = qgroup.map(|v| v.as_ptr()).unwrap_or(std::ptr::null_mut());
 
-        unsafe_wrapper!({
-            btrfs_util_create_snapshot(
-                path_src_cstr.as_ptr(),
-                path_dest_cstr.as_ptr(),
-                flags_val,
-                std::ptr::null_mut(), // should be changed in the future for async support
-                qgroup_ptr,
-            )
-        })?;
+        let transid: u64 = {
+            let mut transid: u64 = 0;
+            unsafe_wrapper!({
+                btrfs_util_create_snapshot(
+                    path_src_cstr.as_ptr(),
+                    path_dest_cstr.as_ptr(),
+                    flags_val,
+                    &mut transid,
+                    qgroup_ptr,
+                )
+            })?;
+            transid
+        };
 
-        Ok(Self::from_path(path)?)
+        unsafe_wrapper!({ btrfs_util_wait_sync(path_dest_cstr.as_ptr(), transid) })?;
+
+        Self::get(path)
     }
 
     /// Get the id of this subvolume.
+    #[inline]
     pub fn id(&self) -> u64 {
         self.id
     }
 
-    /// Get the filesystem root of this subvolume.
-    pub fn fs_root(&self) -> &Path {
-        &self.fs_root
+    /// Get the path of this subvolume.
+    #[inline]
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
-    /// Create a new Subvolume from an id.
+    /// Create a new subvolume from an id and a path.
     ///
     /// Restricted to the crate.
-    pub(crate) fn new(id: u64, fs_root: &Path) -> Self {
-        Self {
-            id,
-            fs_root: fs_root.to_owned(),
-        }
+    #[inline]
+    pub(crate) fn new(id: u64, path: PathBuf) -> Self {
+        Self { id, path }
     }
 }
 
-impl Into<Result<SubvolumeIterator>> for Subvolume {
-    fn into(self) -> Result<SubvolumeIterator> {
-        SubvolumeIterator::create(self, None)
+impl Into<u64> for &Subvolume {
+    /// Returns the id of the subvolume.
+    #[inline]
+    fn into(self) -> u64 {
+        self.id
+    }
+}
+
+impl TryFrom<u64> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from an id.
+    ///
+    /// This function will panic if it cannot retrieve the current working directory.
+    ///
+    /// ![Requires **CAP_SYS_ADMIN**](https://img.shields.io/static/v1?label=Requires&message=CAP_SYS_ADMIN&color=informational)
+    fn try_from(src: u64) -> Result<Subvolume> {
+        let path_cstr: CString = common::path_to_cstr(
+            std::env::current_dir()
+                .expect("Could not get the current working directory")
+                .as_ref(),
+        );
+        let mut path_ret_ptr: *mut std::os::raw::c_char = std::ptr::null_mut();
+
+        unsafe_wrapper!({ btrfs_util_subvolume_path(path_cstr.as_ptr(), src, &mut path_ret_ptr) })?;
+
+        let path_ret: CString = unsafe { CString::from_raw(path_ret_ptr) };
+
+        Ok(Self::new(src, common::cstr_to_path(&path_ret)))
+    }
+}
+
+impl Into<PathBuf> for &Subvolume {
+    /// Returns the path of the subvolume.
+    #[inline]
+    fn into(self) -> PathBuf {
+        self.path.clone()
+    }
+}
+
+impl<'lifetime> Into<&'lifetime Path> for &'lifetime Subvolume {
+    /// Returns the path of the subvolume.
+    #[inline]
+    fn into(self) -> &'lifetime Path {
+        self.path.as_ref()
+    }
+}
+
+impl TryFrom<&Path> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from a path.
+    #[inline]
+    fn try_from(src: &Path) -> Result<Subvolume> {
+        Subvolume::get_impl(src)
+    }
+}
+
+impl TryFrom<PathBuf> for Subvolume {
+    type Error = LibError;
+
+    /// Attempts to get a subvolume from a path.
+    #[inline]
+    fn try_from(src: PathBuf) -> Result<Subvolume> {
+        Subvolume::get_impl(src.as_ref())
     }
 }
 

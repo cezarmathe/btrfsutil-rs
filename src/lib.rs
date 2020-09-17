@@ -59,6 +59,7 @@ pub mod error;
 mod common;
 pub mod qgroup;
 pub mod subvolume;
+pub mod sync;
 
 #[cfg(test)]
 mod testing;
