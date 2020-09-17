@@ -1,9 +1,6 @@
 //! Btrfs quota groups
 
-use crate::error::*;
 use crate::Result;
-
-use std::convert::TryFrom;
 
 use btrfsutil_sys::btrfs_util_create_qgroup_inherit;
 use btrfsutil_sys::btrfs_util_destroy_qgroup_inherit;

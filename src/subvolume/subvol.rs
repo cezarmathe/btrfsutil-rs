@@ -1,6 +1,5 @@
 use crate::common;
 use crate::error::LibError;
-use crate::error::LibErrorCode;
 use crate::qgroup::QgroupInherit;
 use crate::subvolume::SubvolumeInfo;
 use crate::Result;

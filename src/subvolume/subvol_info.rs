@@ -1,6 +1,4 @@
 use crate::common;
-use crate::error::LibError;
-use crate::error::LibErrorCode;
 use crate::subvolume::Subvolume;
 use crate::BtrfsUtilError;
 use crate::Result;
