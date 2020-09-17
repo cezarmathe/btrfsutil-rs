@@ -375,6 +375,14 @@ impl Into<PathBuf> for &Subvolume {
     }
 }
 
+impl<'lifetime> Into<&'lifetime Path> for &'lifetime Subvolume {
+    /// Returns the path of the subvolume.
+    #[inline]
+    fn into(self) -> &'lifetime Path {
+        self.path.as_ref()
+    }
+}
+
 impl TryFrom<&Path> for Subvolume {
     type Error = LibError;
 
