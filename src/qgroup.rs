@@ -81,21 +81,3 @@ impl Drop for QgroupInherit {
         }
     }
 }
-
-impl Into<*mut btrfs_util_qgroup_inherit> for QgroupInherit {
-    fn into(self) -> *mut btrfs_util_qgroup_inherit {
-        self.0
-    }
-}
-
-impl Into<*mut btrfs_util_qgroup_inherit> for &mut QgroupInherit {
-    fn into(self) -> *mut btrfs_util_qgroup_inherit {
-        self.0
-    }
-}
-
-impl Into<*const btrfs_util_qgroup_inherit> for &QgroupInherit {
-    fn into(self) -> *const btrfs_util_qgroup_inherit {
-        self.0
-    }
-}
