@@ -76,15 +76,13 @@ impl Iterator for SubvolumeIterator {
             } else {
                 Err(e).into()
             }
+        } else if !cstr_ptr.is_null() {
+            let path = common::cstr_to_path(unsafe { CString::from_raw(cstr_ptr).as_ref() });
+            Subvolume::get(path.as_path()).into()
+        } else if id != 0 {
+            Subvolume::try_from(id).into()
         } else {
-            if !cstr_ptr.is_null() {
-                let path = common::cstr_to_path(unsafe { CString::from_raw(cstr_ptr).as_ref() });
-                Subvolume::get(path.as_path()).into()
-            } else if id != 0 {
-                Subvolume::try_from(id).into()
-            } else {
-                panic!("subvolume iterator returned both a null path")
-            }
+            panic!("subvolume iterator returned both a null path")
         }
     }
 }
