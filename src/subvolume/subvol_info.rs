@@ -77,7 +77,7 @@ pub struct SubvolumeInfo {
 
 impl Into<Subvolume> for &SubvolumeInfo {
     fn into(self) -> Subvolume {
-        Subvolume::new(self.id, self.path)
+        Subvolume::new(self.id, self.path.clone())
     }
 }
 
