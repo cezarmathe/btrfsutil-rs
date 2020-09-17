@@ -328,10 +328,7 @@ impl Subvolume {
     /// Restricted to the crate.
     #[inline]
     pub(crate) fn new(id: u64, path: PathBuf) -> Self {
-        Self {
-            id,
-            path,
-        }
+        Self { id, path }
     }
 }
 
