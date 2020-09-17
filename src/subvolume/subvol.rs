@@ -371,7 +371,7 @@ impl Into<PathBuf> for &Subvolume {
     /// Returns the path of the subvolume.
     #[inline]
     fn into(self) -> PathBuf {
-        self.path
+        self.path.clone()
     }
 }
 
