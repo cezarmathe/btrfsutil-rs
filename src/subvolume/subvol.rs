@@ -121,7 +121,7 @@ impl Subvolume {
 
     fn create_impl(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
         let path_cstr = common::path_to_cstr(path);
-        let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
+        let qgroup_ptr = qgroup.map(|v| v.as_ptr()).unwrap_or(std::ptr::null_mut());
 
         let transid: u64 = {
             let mut transid: u64 = 0;
@@ -290,7 +290,7 @@ impl Subvolume {
         let path_src_cstr = common::path_to_cstr(&self.path);
         let path_dest_cstr = common::path_to_cstr(path);
         let flags_val = flags.map(|v| v.bits()).unwrap_or(0);
-        let qgroup_ptr = qgroup.map(|v| v.into()).unwrap_or(std::ptr::null_mut());
+        let qgroup_ptr = qgroup.map(|v| v.as_ptr()).unwrap_or(std::ptr::null_mut());
 
         let transid: u64 = {
             let mut transid: u64 = 0;

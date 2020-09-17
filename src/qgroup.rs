@@ -33,8 +33,8 @@ impl QgroupInherit {
 
     /// Add inheritance from a qgroup to a qgroup inheritance specifier.
     pub fn add(&mut self, qgroup_id: u64) -> Result<()> {
-        let qgroup_ptr_initial: *mut btrfs_util_qgroup_inherit = self.into();
-        let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = self.into();
+        let qgroup_ptr_initial: *mut btrfs_util_qgroup_inherit = self.as_ptr();
+        let mut qgroup_ptr: *mut btrfs_util_qgroup_inherit = self.as_ptr();
 
         unsafe_wrapper!({ btrfs_util_qgroup_inherit_add_group(&mut qgroup_ptr, qgroup_id) })?;
 
@@ -49,7 +49,7 @@ impl QgroupInherit {
 
     /// Get the qgroup ids contained by this inheritance specifier.
     pub fn get_groups(&self) -> Result<Vec<u64>> {
-        let qgroup_ptr: *const btrfs_util_qgroup_inherit = self.into();
+        let qgroup_ptr: *const btrfs_util_qgroup_inherit = self.as_ptr();
         let mut qgroup_ids_ptr: *const u64 = std::ptr::null();
         let mut qgroup_ids_count: u64 = 0;
 
