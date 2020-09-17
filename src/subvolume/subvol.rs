@@ -116,7 +116,7 @@ impl Subvolume {
         P: Into<&'a Path>,
         Q: Into<Option<QgroupInherit>>,
     {
-        Self::create(path.into(), qgroup.into())
+        Self::create_impl(path.into(), qgroup.into())
     }
 
     fn create_impl(path: &Path, qgroup: Option<QgroupInherit>) -> Result<Self> {
