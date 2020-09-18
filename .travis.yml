@@ -1,19 +1,23 @@
-language: rust
-rust:
-  - stable
-  - beta
-  - nightly
-jobs:
-  allow_failures:
-    - rust: nightly
-  fast_finish: true
-cache: cargo
+dist: bionic
+language: minimal
+cache:
+  directories:
+    - /home/travis/.vagrant.d/boxes
+    - /home/travis/build/cezarmathe/btrfsutil-rs/target
 
-before_install:
-  - rustup component add rustfmt
-  - rustup component add clippy
+install:
+  - sudo apt-get update && sudo apt-get install -y bridge-utils dnsmasq-base ebtables libvirt-bin libvirt-dev qemu-kvm qemu-utils ruby-dev
+  - sudo wget -nv https://releases.hashicorp.com/vagrant/2.2.10/vagrant_2.2.10_x86_64.deb
+  - sudo dpkg -i vagrant_2.2.10_x86_64.deb
+  - vagrant --version
+  - sudo vagrant plugin install vagrant-libvirt
 
 script:
-  - cargo fmt -- --check
-  - cargo clippy -- -D warnings
-  - RUSTFLAGS="--cfg docs_rs" cargo doc --no-deps -v
+  - sudo make provision PROVIDER=libvirt
+  - sudo make wrapper WRAPPER_CMD="make check_fmt"
+  - sudo make wrapper WRAPPER_CMD="make check_clippy"
+  - sudo make wrapper WRAPPER_CMD="make docs"
+  - sudo make wrapper WRAPPER_CMD="cargo build -v --release"
+  - sudo make wrapper WRAPPER_CMD="./scripts/btrfsutil_testenv_create.sh"
+  - sudo make wrapper WRAPPER_CMD="cargo test -v --release"
+  - sudo make wrapper WRAPPER_CMD="./scripts/btrfsutil_testenv_destroy.sh"
