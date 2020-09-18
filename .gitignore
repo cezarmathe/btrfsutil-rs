@@ -1,2 +1,5 @@
 /target
 Cargo.lock
+
+# Ignore the local vagrant directory
+.vagrant
