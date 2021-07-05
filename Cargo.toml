@@ -30,7 +30,7 @@ libc = "0.2.75"
 
 [dev-dependencies]
 libmount = "0.1.11"
-loopdev = "0.2"
+loopdev = "0.3"
 nix = "0.18"
 tempfile = "3.0.1"
 
