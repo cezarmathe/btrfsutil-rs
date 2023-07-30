@@ -168,7 +168,7 @@ impl Subvolume {
 
         let path_cstr = common::path_to_cstr(fs_root);
         let mut ids_ptr: *mut u64 = std::ptr::null_mut();
-        let mut ids_count: u64 = 0;
+        let mut ids_count: usize = 0;
 
         unsafe_wrapper!({
             btrfs_util_deleted_subvolumes(path_cstr.as_ptr(), &mut ids_ptr, &mut ids_count)
@@ -179,14 +179,14 @@ impl Subvolume {
         }
 
         let subvolume_ids: Vec<u64> = unsafe {
-            let slice = std::slice::from_raw_parts(ids_ptr, ids_count as usize);
+            let slice = std::slice::from_raw_parts(ids_ptr, ids_count);
             let vec = slice.to_vec();
             free(ids_ptr as *mut c_void);
             vec
         };
 
         let subvolumes: Vec<Subvolume> = {
-            let mut subvolumes: Vec<Subvolume> = Vec::with_capacity(ids_count as usize);
+            let mut subvolumes: Vec<Subvolume> = Vec::with_capacity(ids_count);
             for id in subvolume_ids {
                 subvolumes.push(Subvolume::try_from(id)?);
             }
@@ -331,11 +331,11 @@ impl Subvolume {
     }
 }
 
-impl Into<u64> for &Subvolume {
+impl From<&Subvolume> for u64 {
     /// Returns the id of the subvolume.
     #[inline]
-    fn into(self) -> u64 {
-        self.id
+    fn from(subvolume: &Subvolume) -> u64 {
+        subvolume.id
     }
 }
 
@@ -363,19 +363,19 @@ impl TryFrom<u64> for Subvolume {
     }
 }
 
-impl Into<PathBuf> for &Subvolume {
+impl From<&Subvolume> for PathBuf {
     /// Returns the path of the subvolume.
     #[inline]
-    fn into(self) -> PathBuf {
-        self.path.clone()
+    fn from(subvolume: &Subvolume) -> Self {
+        subvolume.path.clone()
     }
 }
 
-impl<'lifetime> Into<&'lifetime Path> for &'lifetime Subvolume {
+impl<'lifetime> From<&'lifetime Subvolume> for &'lifetime Path {
     /// Returns the path of the subvolume.
     #[inline]
-    fn into(self) -> &'lifetime Path {
-        self.path.as_ref()
+    fn from(subvolume: &'lifetime Subvolume) -> Self {
+        subvolume.path.as_ref()
     }
 }
 
@@ -427,19 +427,15 @@ mod test {
         )
         .unwrap();
 
-        let root_subvol = Subvolume::from_path(mount_pt).unwrap();
+        let root_subvol = Subvolume::try_from(mount_pt).unwrap();
         assert_eq!(root_subvol.id(), BTRFS_FS_TREE_OBJECTID);
 
         let mut new_sv_path = mount_pt.to_owned();
         new_sv_path.push("subvol1");
-        let sv1 = Subvolume::create(&new_sv_path, None).unwrap();
+        let sv1 = Subvolume::create(&*new_sv_path, None).unwrap();
 
-        // Test rel_path()
-        let sv1_rel_path = sv1.rel_path().unwrap();
-        assert_eq!(&sv1_rel_path, Path::new("subvol1"));
-
-        // Test abs_path()
-        let sv1_abs_path = sv1.abs_path().unwrap();
+        // Test path()
+        let sv1_abs_path = sv1.path().to_owned();
         assert_eq!(&sv1_abs_path, &new_sv_path);
 
         // Test get_default
@@ -450,7 +446,7 @@ mod test {
         sv1.set_default().unwrap();
         let new_default_sv = Subvolume::get_default(mount_pt).unwrap();
         assert_eq!(sv1, new_default_sv);
-        assert_eq!(new_default_sv.abs_path().unwrap(), new_sv_path);
+        assert_eq!(new_default_sv.path().canonicalize().unwrap(), new_sv_path);
 
         // Restore root as default
         root_subvol.set_default().unwrap();
@@ -482,26 +478,26 @@ mod test {
             .is_ok());
 
         // Test is_subvolume
-        assert_eq!(true, Subvolume::is_subvolume(mount_pt).unwrap());
-        assert_eq!(true, Subvolume::is_subvolume(&new_sv_path).unwrap());
+        Subvolume::is_subvolume(mount_pt).expect("Valid subvolume failed is_subvolume test");
+        Subvolume::is_subvolume(&*new_sv_path).expect("Valid subvolume failed is_subvolume test");
         // Existing non-btrfs path
-        assert_eq!(false, Subvolume::is_subvolume(Path::new("/tmp")).unwrap());
+        Subvolume::is_subvolume(Path::new("/tmp"))
+            .expect_err("Existing, non-btrfs path incorrectly flagged as subvolume");
         // Nonexistent path
-        assert_eq!(
-            false,
-            Subvolume::is_subvolume(Path::new("/foobar")).unwrap()
-        );
+        Subvolume::is_subvolume(Path::new("/foobar"))
+            .expect_err("Nonexistent path incorrectly flagged as subvolume");
 
         let mut dir_path = sv1_abs_path.clone();
         dir_path.push("dir1");
         create_dir_all(&dir_path).unwrap();
         // A directory within a subvolume is not a subvolume
-        assert_eq!(false, Subvolume::is_subvolume(&dir_path).unwrap());
+        Subvolume::is_subvolume(&*dir_path)
+            .expect_err("Directory within a subvolume incorrectly flagged as subvolume");
 
         // Test making a snapshot
         let mut snap_path = mount_pt.to_owned();
         snap_path.push("snap1");
-        let snap_sv1 = sv1.snapshot(&snap_path, None, None).unwrap();
+        let snap_sv1 = sv1.snapshot(&*snap_path, None, None).unwrap();
         let mut snap_file_path = snap_path;
         snap_file_path.push("file.txt");
 

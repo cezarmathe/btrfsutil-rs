@@ -54,7 +54,7 @@ impl QgroupInherit {
     pub fn get_groups(&self) -> Result<Vec<u64>> {
         let qgroup_ptr: *const btrfs_util_qgroup_inherit = self.as_ptr();
         let mut qgroup_ids_ptr: *const u64 = std::ptr::null();
-        let mut qgroup_ids_count: u64 = 0;
+        let mut qgroup_ids_count: usize = 0;
 
         unsafe {
             btrfs_util_qgroup_inherit_get_groups(
@@ -69,8 +69,7 @@ impl QgroupInherit {
         }
 
         let ids: Vec<u64> = {
-            let slice =
-                unsafe { std::slice::from_raw_parts(qgroup_ids_ptr, qgroup_ids_count as usize) };
+            let slice = unsafe { std::slice::from_raw_parts(qgroup_ids_ptr, qgroup_ids_count) };
             let vec = slice.to_vec();
             unsafe { free(qgroup_ids_ptr as *mut c_void) };
             vec

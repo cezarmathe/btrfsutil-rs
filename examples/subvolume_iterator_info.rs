@@ -1,17 +1,14 @@
 use btrfsutil::subvolume::*;
-use btrfsutil::Result;
 
 use std::path::Path;
 
 fn main() {
-    let root_subvol = Subvolume::from_path(Path::new("/")).unwrap();
+    let root_path = std::env::var("SUBVOLUME_PATH").unwrap_or_else(|_| "/mnt/btrfs".to_owned());
+    let root_subvol = Subvolume::try_from(Path::new(&root_path)).unwrap();
 
-    let subvol_iterator: SubvolumeIterator = {
-        let result: Result<SubvolumeIterator> = root_subvol.into();
-        result.unwrap()
-    };
+    let subvol_iterator = SubvolumeIterator::try_from(&root_subvol).unwrap();
 
     for subvolume in subvol_iterator {
-        println!("{:?}", subvolume.info().unwrap());
+        println!("{:?}", subvolume.unwrap().info().unwrap());
     }
 }

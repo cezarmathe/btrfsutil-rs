@@ -72,7 +72,7 @@ macro_rules! glue_error {
         }
     };
     ($glue_err: expr) => {
-        return crate::Result::Err(crate::BtrfsUtilError::Glue($glue_err.into()));
+        return crate::Result::Err(crate::BtrfsUtilError::Glue($glue_err.into()))
     };
 }
 
@@ -81,10 +81,10 @@ macro_rules! glue_error {
 macro_rules! glue_error {
     ($condition: expr, $glue_err: expr) => {
         if $condition {
-            panic!("Glue error: {}", $glue_err);
+            panic!("Glue error: {}", $glue_err)
         }
     };
     ($glue_err: expr) => {
-        panic!("Glue error: {}", $glue_err);
+        panic!("Glue error: {}", $glue_err)
     };
 }
