@@ -107,7 +107,7 @@ impl TryFrom<&Subvolume> for SubvolumeIterator {
 impl TryInto<Vec<Subvolume>> for SubvolumeIterator {
     type Error = LibError;
 
-    /// Same as SubvolumeIterator.collect::<Result<Vec<Subvolume>>>.
+    /// Same as SubvolumeIterator.`collect::<Result<Vec<Subvolume>>>`.
     #[inline]
     fn try_into(self) -> Result<Vec<Subvolume>> {
         self.collect::<Result<Vec<Subvolume>>>()
