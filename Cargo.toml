@@ -1,13 +1,14 @@
 [package]
 name = "btrfsutil"
-version = "0.1.0"
-authors = ["cezarmathe <me@cezarmathe.com>"]
+version = "0.2.0"
+authors = ["cezarmathe <me@cezarmathe.com>", "Alex Pearson <alex@alexpear.com>"]
 description = "Safe wrappers for libbtrfsutil."
 readme = "README.md"
 repository = "https://github.com/cezarmathe/btrfsutil-rs"
 documentation = "https://docs.rs/btrfsutil/"
 license = "MIT"
-edition = "2018"
+edition = "2021"
+keywords = ["btrfs"]
 
 
 [package.metadata.docs.rs]
@@ -20,7 +21,7 @@ name = "btrfsutil"
 path = "src/lib.rs"
 
 [dependencies]
-btrfsutil-sys = "1.2.1"
+btrfsutil-sys = "1.3.0"
 
 bitflags = "1.2"
 chrono = "0.4.11"

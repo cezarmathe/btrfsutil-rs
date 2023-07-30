@@ -73,9 +73,9 @@ pub struct SubvolumeInfo {
     pub rtime: Option<DateTime<Local>>,
 }
 
-impl Into<Subvolume> for &SubvolumeInfo {
-    fn into(self) -> Subvolume {
-        Subvolume::new(self.id, self.path.clone())
+impl From<&SubvolumeInfo> for Subvolume {
+    fn from(info: &SubvolumeInfo) -> Self {
+        Self::new(info.id, info.path.clone())
     }
 }
 
@@ -129,12 +129,22 @@ impl TryFrom<&Subvolume> for SubvolumeInfo {
             Uuid::from_slice(&info.parent_uuid).expect("Failed to get parent uuid from C");
         let received_uuid_val: Uuid =
             Uuid::from_slice(&info.received_uuid).expect("Failed to get received uuid from C");
-        let ctime: DateTime<Local> = Local.timestamp(info.ctime.tv_sec, info.ctime.tv_nsec as u32);
-        let otime: DateTime<Local> = Local.timestamp(info.otime.tv_sec, info.otime.tv_nsec as u32);
-        let stime_val: DateTime<Local> =
-            Local.timestamp(info.stime.tv_sec, info.stime.tv_nsec as u32);
-        let rtime_val: DateTime<Local> =
-            Local.timestamp(info.rtime.tv_sec, info.rtime.tv_nsec as u32);
+        let ctime: DateTime<Local> = Local
+            .timestamp_opt(info.ctime.tv_sec, info.ctime.tv_nsec as u32)
+            .single()
+            .expect("Failed to generate timestamp from C");
+        let otime: DateTime<Local> = Local
+            .timestamp_opt(info.otime.tv_sec, info.otime.tv_nsec as u32)
+            .single()
+            .expect("Failed to generate timestamp from C");
+        let stime_val: DateTime<Local> = Local
+            .timestamp_opt(info.stime.tv_sec, info.stime.tv_nsec as u32)
+            .single()
+            .expect("Failed to generate timestamp from C");
+        let rtime_val: DateTime<Local> = Local
+            .timestamp_opt(info.rtime.tv_sec, info.rtime.tv_nsec as u32)
+            .single()
+            .expect("Failed to generate timestamp from C");
         let parent_id: Option<u64> = if info.parent_id == 0 {
             None
         } else {
