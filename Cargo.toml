@@ -12,8 +12,8 @@ keywords = ["btrfs"]
 
 
 [package.metadata.docs.rs]
-rustc-args = ["--cfg",  "docs_rs"]
-rustdoc-args = ["--cfg", "docs_rs"]
+rustc-args = ["--cfg",  "docsrs"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 
 [lib]
