@@ -31,7 +31,7 @@ libc = "0.2.75"
 
 [dev-dependencies]
 libmount = "0.1.11"
-loopdev = "0.2"
+loopdev = "0.4"
 nix = "0.18"
 tempfile = "3.0.1"
 
@@ -42,6 +42,11 @@ default = []
 # extra reliability. If not enabled, glue errors will make the library panic.
 enable-glue-errors = []
 
+# waiting on a new release
+# https://github.com/mdaffin/loopdev/issues/65
+[patch.crates-io.loopdev]
+git = "https://github.com/mulkieran/loopdev"
+branch = "bump-bindgen-reduce-version"
 
 [[example]]
 name = "subvolume_iterator_info"
