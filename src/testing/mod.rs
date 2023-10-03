@@ -7,5 +7,5 @@
 mod loopbacked;
 mod test_lib;
 
-pub use self::loopbacked::test_with_spec;
-pub use self::test_lib::btrfs_create_fs;
+pub(crate) use self::loopbacked::test_with_spec;
+pub(crate) use self::test_lib::btrfs_create_fs;

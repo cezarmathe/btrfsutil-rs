@@ -16,7 +16,7 @@ use nix::mount::{umount2, MntFlags};
 fn execute_cmd(cmd: &mut Command) -> io::Result<()> {
     match cmd.output() {
         Err(err) => {
-            eprintln!("cmd: {:?}, error '{}'", cmd, err.to_string());
+            eprintln!("cmd: {:?}, error '{}'", cmd, err);
             Err(err)
         }
 
@@ -36,9 +36,9 @@ fn execute_cmd(cmd: &mut Command) -> io::Result<()> {
     }
 }
 
-/// Generate an XFS FS, does not specify UUID as that's not supported on version in Travis
-pub fn btrfs_create_fs(devnode: &Path) -> io::Result<()> {
-    execute_cmd(Command::new("mkfs.btrfs").arg("-f").arg("-q").arg(&devnode))
+/// Generate a btrfs FS, does not specify UUID as that's not supported on version in Travis
+pub(crate) fn btrfs_create_fs(devnode: &Path) -> io::Result<()> {
+    execute_cmd(Command::new("mkfs.btrfs").arg("-f").arg("-q").arg(devnode))
 }
 
 /// Unmount any filesystems that contain TEST_ID in the mount point.
@@ -63,6 +63,6 @@ fn test_fs_unmount() -> io::Result<()> {
     }()
 }
 
-pub fn clean_up() -> io::Result<()> {
+pub(crate) fn clean_up() -> io::Result<()> {
     test_fs_unmount()
 }

@@ -14,7 +14,7 @@ use tempfile::{self, TempDir};
 
 use crate::testing::test_lib::clean_up;
 
-pub struct LoopTestDev {
+pub(crate) struct LoopTestDev {
     ld: LoopDevice,
 }
 
@@ -76,7 +76,7 @@ fn get_devices(count: u8, dir: &TempDir) -> Vec<LoopTestDev> {
 /// Set up count loopbacked devices.
 /// Then, run the designated test.
 /// Then, take down the loop devices.
-pub fn test_with_spec<F>(count: u8, test: F)
+pub(crate) fn test_with_spec<F>(count: u8, test: F)
 where
     F: Fn(&[&Path]) + panic::RefUnwindSafe,
 {
