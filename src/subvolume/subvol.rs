@@ -436,17 +436,24 @@ mod test {
 
         // Test path()
         let sv1_abs_path = sv1.path().to_owned();
-        assert_eq!(&sv1_abs_path, &new_sv_path);
+        assert_eq!(&sv1_abs_path, &new_sv_path, "paths are not equal");
 
         // Test get_default
         let default_sv = Subvolume::get_default(mount_pt).unwrap();
-        assert_eq!(default_sv, root_subvol);
+        assert_eq!(
+            default_sv, root_subvol,
+            "default subvolume is not the root subvolume"
+        );
 
         // Test set_default
         sv1.set_default().unwrap();
         let new_default_sv = Subvolume::get_default(mount_pt).unwrap();
-        assert_eq!(sv1, new_default_sv);
-        assert_eq!(new_default_sv.path().canonicalize().unwrap(), new_sv_path);
+        assert_eq!(sv1, new_default_sv, "new default subvolume not set");
+        assert_eq!(
+            new_default_sv.path().canonicalize().unwrap(),
+            new_sv_path,
+            "default subvolume path does not match"
+        );
 
         // Restore root as default
         root_subvol.set_default().unwrap();
@@ -514,6 +521,7 @@ mod test {
     }
 
     #[test]
+    #[ignore] // FIXME: refactor and run once build pipeline set up
     fn loop_test_btrfs_subvol() {
         test_with_spec(1, test_btrfs_subvol);
     }
