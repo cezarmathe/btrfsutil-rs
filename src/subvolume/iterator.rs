@@ -6,7 +6,7 @@ use crate::Result;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::ffi::CString;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use btrfsutil_sys::btrfs_util_create_subvolume_iterator;
 use btrfsutil_sys::btrfs_util_destroy_subvolume_iterator;
@@ -22,7 +22,10 @@ bitflags! {
 }
 
 /// A subvolume iterator.
-pub struct SubvolumeIterator(*mut btrfs_util_subvolume_iterator);
+pub struct SubvolumeIterator{
+  top: PathBuf,
+  it: *mut btrfs_util_subvolume_iterator,
+}
 
 impl SubvolumeIterator {
     /// Create a new subvolume iterator.
@@ -56,7 +59,7 @@ impl SubvolumeIterator {
             raw_iterator_ptr
         };
 
-        Ok(Self(raw_iterator_ptr))
+        Ok(Self { top: path.to_owned(), it: raw_iterator_ptr })
     }
 }
 
@@ -68,7 +71,7 @@ impl Iterator for SubvolumeIterator {
         let mut id: u64 = 0;
 
         if let Err(e) =
-            unsafe_wrapper!({ btrfs_util_subvolume_iterator_next(self.0, &mut cstr_ptr, &mut id) })
+            unsafe_wrapper!({ btrfs_util_subvolume_iterator_next(self.it, &mut cstr_ptr, &mut id) })
         {
             if e == LibError::StopIteration {
                 None
@@ -77,7 +80,9 @@ impl Iterator for SubvolumeIterator {
             }
         } else if !cstr_ptr.is_null() {
             let path = common::cstr_to_path(unsafe { CString::from_raw(cstr_ptr).as_ref() });
-            Subvolume::get(path.as_path()).into()
+            let mut p = self.top.clone();
+            p.push(path);
+            Subvolume::get(&*p).into()
         } else if id != 0 {
             Subvolume::try_from(id).into()
         } else {
@@ -89,7 +94,7 @@ impl Iterator for SubvolumeIterator {
 impl Drop for SubvolumeIterator {
     fn drop(&mut self) {
         unsafe {
-            btrfs_util_destroy_subvolume_iterator(self.0);
+            btrfs_util_destroy_subvolume_iterator(self.it);
         }
     }
 }
