@@ -1,5 +1,7 @@
 # btrfsutil-rs
 
+NOTE!!!!! I am not actively working on this library and I don't have the bandwidth to maintain it, manage issues, and review PRs. Please shoot me an email (my address is on my website) if you'd be interested in maintaining it.
+
 ![Pre-release Checks](https://github.com/cezarmathe/btrfsutil-rs/actions/workflows/check.yml/badge.svg?branch=master)
 [![btrfsutil](https://img.shields.io/crates/v/btrfsutil)](https://crates.io/crates/btrfsutil)
 [![docs](https://docs.rs/btrfsutil/badge.svg)](https://docs.rs/btrfsutil)
